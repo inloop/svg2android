@@ -64,7 +64,7 @@ function parseFile(inputXml) {
         var transformSet = false;
 
         for (var i = 0; i < paths.length; i++) {
-            var path = $(paths[i]).attr("d").replace("m", START_PATH).replace("z", END_PATH); // uppercase = absolute position
+            var path = $(paths[i]).attr("d");
             var parentTag = $(paths[i]).parent().get(0);
 
             //Check If parent is group, apply transform
@@ -89,16 +89,17 @@ function parseFile(inputXml) {
             }
 
             //Check path If contains draw otherwise use default l
-            var pathStart = false, skipMove = false, stop = false;
+            var pathStart = false, bigM = false, skipMove = false, stop = false;
             var pathRebuild = "";
             path.split(" ").forEach(function (t) {
                 if (stop) { pathRebuild += t + " "; return;}
 
-                if (t == START_PATH) {
+                if (t.toUpperCase() == START_PATH) {
                     pathStart = true;
+                    bigM = t ==START_PATH ;
                 } else if (skipMove && pathStart) {
                     if (!(t.indexOf(",") == -1 && isNaN(t))) {
-                        t = DRAW_LINE + " " + t;
+                        t = (bigM ? DRAW_LINE.toUpperCase() : DRAW_LINE) + " " + t;
                     }
                     stop = true;
                 } else if (pathStart) {
@@ -108,7 +109,7 @@ function parseFile(inputXml) {
                 pathRebuild += t + " ";
             });
 
-            path = pathRebuild;
+            path = pathRebuild.replace("m", START_PATH).replace("z", END_PATH);
 
             //Convert attributes to style
             var attributes = $(paths[i])[0].attributes;
@@ -118,6 +119,10 @@ function parseFile(inputXml) {
                 var name = attributes[n].name;
                 var value = attributes[n].value;
                 if (name == "style") {
+                    //Fix CSSJSON bug
+                    if (!value.endsWith(";")) {
+                        value += ";"
+                    }
                     var cssAttributes = CSSJSON.toJSON(value).attributes;
                     for (var key in cssAttributes) {
                         if (cssAttributes.hasOwnProperty(key)) {
