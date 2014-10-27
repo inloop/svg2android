@@ -135,8 +135,13 @@ function getDimensions(svg) {
         var viewBoxAttr = svg.attr("viewBox").split(/[,\s]+/);
         return { width:viewBoxAttr[2], height:viewBoxAttr[3] };
     } else {
-        return { width:widthAttr.replace(/[^0-9.]/g,""), height:heightAttr.replace(/[^0-9.]/g,"") };
+        return { width:removeNonNumeric(widthAttr), height:removeNonNumeric(heightAttr) };
     }
+}
+
+function removeNonNumeric(input) {
+    if (typeof input === "undefined") return input;
+    return input.replace(/[^0-9.]/g,"");
 }
 
 function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform) {
@@ -173,7 +178,7 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
         output += generateAttr('fillAlpha', attribute["fill-opacity"], isGroup, "1");
         output += generateAttr('strokeColor', attribute["stroke"], isGroup, "none");
         output += generateAttr('strokeAlpha', attribute["stroke-opacity"], isGroup, "1");
-        output += generateAttr('strokeWidth', attribute["stroke-width"], isGroup, "0");
+        output += generateAttr('strokeWidth', removeNonNumeric(attribute["stroke-width"]), isGroup, "0");
         output += generateAttr('strokeLineJoin', attribute["stroke-linejoin"], isGroup, "miter");
         output += generateAttr('strokeMiterLimit', attribute["stroke-miterlimit"], isGroup, "4");
         output += generateAttr('strokeLineCap', attribute["stroke-linecap"], isGroup, "butt");
