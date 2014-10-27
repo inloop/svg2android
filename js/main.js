@@ -110,8 +110,24 @@ function parseFile(inputXml) {
 
             path = pathRebuild;
 
-            //Use style of first path
-            stylesJson[i] = CSSJSON.toJSON($(paths[i]).attr("style")).attributes;
+            //Convert attributes to style
+            var attributes = $(paths[i])[0].attributes;
+            stylesJson[i] = [];
+
+            for (var n = 0; n < attributes.length; n++) {
+                var name = attributes[n].name;
+                var value = attributes[n].value;
+                if (name == "style") {
+                    var cssAttributes = CSSJSON.toJSON(value).attributes;
+                    for (var key in cssAttributes) {
+                        if (cssAttributes.hasOwnProperty(key)) {
+                            stylesJson[i][key] = cssAttributes[key];
+                        }
+                    }
+                } else {
+                    stylesJson[i][name] = value;
+                }
+            }
 
             if (!path.endsWith(" ")) {
                 path += " ";
@@ -174,7 +190,7 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
     for (var i = 0; i < paths.length; i++) {
         var attribute = attributes[i];
         output += s + '<path\n';
-        output += generateAttr('fillColor', attribute["fill"], isGroup, "none");
+        output += generateAttr('fillColor', attribute["fill"] , isGroup, "none");
         output += generateAttr('fillAlpha', attribute["fill-opacity"], isGroup, "1");
         output += generateAttr('strokeColor', attribute["stroke"], isGroup, "none");
         output += generateAttr('strokeAlpha', attribute["stroke-opacity"], isGroup, "1");
