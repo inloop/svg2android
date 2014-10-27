@@ -67,6 +67,11 @@ function parseFile(inputXml) {
             var path = $(paths[i]).attr("d");
             var parentTag = $(paths[i]).parent().get(0);
 
+            if (path.match(/-?\d*\.?\d+e[+-]?\d+/g)) {
+                setMessage("<b>Warning:</b> found some numbers with scientific E notation in pathData which Android probably does not support. " +
+                "Please fix It manually by editing your editor precision or manually by editing pathData.", "alert-warning");
+            }
+
             //Check If parent is group, apply transform
             if (parentTag.tagName == "g" && !transformSet) {
                 var transform = $(parentTag).attr("transform");
