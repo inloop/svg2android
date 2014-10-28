@@ -45,8 +45,12 @@
     </div>
 
     <div id="output-box">
-        <button type="button" id="select-all" class="btn btn-default btn-sm" onclick="selectAll(this)">Select all
-        </button>
+        <div id="button-box" class="btn-group">
+            <button type="button" class="btn btn-primary btn-sm" onclick="download(this)">Download
+            </button>
+            <button type="button" class="btn btn-default btn-sm" onclick="selectAll(this)">Select all
+            </button>
+        </div>
         <pre class="pre-scrollable" id="output-code"></pre>
     </div>
 
@@ -73,6 +77,7 @@
 <script src="js/bootstrap.min.js"></script>
 <script src="js/cssjson.js"></script>
 <script src='js/filereader.js'></script>
+<script src='js/filesaver.min.js'></script>
 <script src="js/main.js"></script>
 
 <script>

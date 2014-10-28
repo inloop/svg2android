@@ -14,6 +14,7 @@ String.prototype.endsWith = function(suffix) {
 };
 
 /* ------ */
+var lastFileName = "";
 
 var fileReaderOpts = {
     dragClass: "drag", readAsDefault: "Text", on: {
@@ -33,8 +34,18 @@ if (typeof FileReader === "undefined") {
 
 
 function loadFile(e, file) {
+    lastFileName = extractFileNameWithoutExt(file.name) || "";
     $(".alert").hide();
     parseFile(e.target.result);
+}
+
+function extractFileNameWithoutExt(filename) {
+    var dotIndex = filename.lastIndexOf(".");
+    if (dotIndex > -1) {
+        return filename.substr(0, dotIndex);
+    } else {
+        return filename;
+    }
 }
 
 function parseFile(inputXml) {
@@ -43,6 +54,7 @@ function parseFile(inputXml) {
         xml = $($.parseXML(inputXml));
     } catch (e) {
         setMessage("<b>Error:</b> not valid SVG file.", "alert-danger");
+        $("#output-box").hide();
         return;
     }
     var svg = xml.find("svg");
@@ -54,6 +66,7 @@ function parseFile(inputXml) {
 
     if (paths.length == 0) {
         setMessage("No path found, you must convert all your objects into path.", "alert-danger");
+        $("#output-box").hide();
     } else {
 
         var DRAW_LINE = "l"; //used as default parameter when no found in path
@@ -236,6 +249,11 @@ function selectAll() {
         textRange.moveToElementText(el);
         textRange.select();
     }
+}
+
+function download() {
+    var blob = new Blob([$("#output-code").text()], {type: "text/xml;charset=utf-8"});
+    saveAs(blob, lastFileName.length > 0 ? (lastFileName + ".xml") : "vector.xml");
 }
 
 function dropzoneClick() {
