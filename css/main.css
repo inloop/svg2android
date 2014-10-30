@@ -24,6 +24,14 @@ footer {
     background-color: lightblue;
 }
 
+.info-items td {
+    vertical-align:top;
+}
+
+.info-items td:first-child {
+    width:90px;
+}
+
 #header {
     background: #e0f2f1;
     color: #7FB6B4;

@@ -9,9 +9,25 @@ String.prototype.f = function () {
     return s;
 };
 
-String.prototype.endsWith = function(suffix) {
-    return this.indexOf(suffix, this.length - suffix.length) !== -1;
+Array.prototype.pushUnique = function (item){
+    if(this.indexOf(item) == -1) {
+        this.push(item);
+        return true;
+    }
+    return false;
 };
+
+if (typeof String.prototype.endsWith !== 'function') {
+    String.prototype.endsWith = function (suffix) {
+        return this.indexOf(suffix, this.length - suffix.length) !== -1;
+    };
+}
+
+if (typeof String.prototype.startsWith !== 'function') {
+    String.prototype.startsWith = function (str){
+        return this.indexOf(str) == 0;
+    };
+}
 
 /* ------ */
 var lastFileName = "";
@@ -73,6 +89,7 @@ function parseFile(inputXml) {
         var START_PATH = "M";
         var END_PATH = "Z";
         var stylesJson = [];
+        var warnings = [];
         var groupTransform = null;
         var transformSet = false;
 
@@ -81,8 +98,8 @@ function parseFile(inputXml) {
             var parentTag = $(paths[i]).parent().get(0);
 
             if (path.match(/-?\d*\.?\d+e[+-]?\d+/g)) {
-                setMessage("<b>Warning:</b> found some numbers with scientific E notation in pathData which Android probably does not support. " +
-                "Please fix It manually by editing your editor precision or manually by editing pathData.", "alert-warning");
+                warnings.pushUnique("found some numbers with scientific E notation in pathData which Android probably does not support. " +
+                "Please fix It manually by editing your editor precision or manually by editing pathData");
             }
 
             //Check If parent is group, apply transform
@@ -145,6 +162,10 @@ function parseFile(inputXml) {
                     for (var key in cssAttributes) {
                         if (cssAttributes.hasOwnProperty(key)) {
                             stylesJson[i][key] = cssAttributes[key];
+
+                            if ((key == "fill" || key == "stroke") && cssAttributes[key].startsWith("url")) {
+                                warnings.pushUnique("found fill(s) or stroke(s) which uses <i>url()</i> (gradients and patterns are not supported in Android)");
+                            }
                         }
                     }
                 } else {
@@ -164,6 +185,17 @@ function parseFile(inputXml) {
         $(".nouploadinfo").hide();
         $("#dropzone").animate({ height: 50}, 500);
         $("#success-box").show();
+
+        //Show warnings If set
+        if (warnings.length == 1) {
+            setMessage("<b>Warning:</b> " + warnings[0], "alert-warning")
+        } else if (warnings.length > 1) {
+            var warnText = "";
+            warnings.forEach(function (w, i) {
+                warnText += "<tr><td><b>Warning #" + (i+1) + ":</b></td><td>" + w + "</td></tr>";
+            });
+            setMessage("<table class='info-items'>" + warnText + "</table>", "alert-warning")
+        }
     }
 }
 
