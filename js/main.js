@@ -212,6 +212,22 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
 
     for (var i = 0; i < paths.length; i++) {
         var attribute = attributes[i];
+
+        //Parent opacity setting - multiply fill-opacity and stroke-opacity
+        var opacity = attribute["opacity"];
+        if (typeof opacity !== "undefined") {
+            if (typeof attribute["fill-opacity"] !== "undefined") {
+                attribute["fill-opacity"] *= opacity;
+            } else {
+                attribute["fill-opacity"] = opacity;
+            }
+            if (typeof attribute["stroke-opacity"] !== "undefined") {
+                attribute["stroke-opacity"] *= opacity;
+            } else {
+                attribute["stroke-opacity"] = opacity;
+            }
+        }
+
         output += s + '<path\n';
         output += generateAttr('fillColor', attribute["fill"] , isGroup, "none");
         output += generateAttr('fillAlpha', attribute["fill-opacity"], isGroup, "1");
@@ -231,7 +247,7 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
 }
 
 function generateAttr(name, val, group, def, end) {
-    if (typeof val === "undefined" || val === def) return "";
+    if (typeof val === "undefined" || val == def) return "";
     var s = group ? '            ' : '        ';
     return s + 'android:{0}="{1}"{2}\n'.f(name, val, end ? ' />' : '');
 }
