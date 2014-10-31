@@ -9,6 +9,10 @@ footer {
     text-align: center;
 }
 
+footer small a {
+    color: #7AA7CF;
+}
+
 #main-container {
     position: relative;
     background: #ffffff;
