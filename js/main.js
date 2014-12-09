@@ -97,6 +97,14 @@ function parseFile(inputXml) {
             var path = $(paths[i]).attr("d");
             var parentTag = $(paths[i]).parent().get(0);
 
+            if (typeof path === "undefined") {
+                paths[i] = null;
+                warnings.pushUnique("found path(s) without data (empty parameter <i>d</i>)");
+                continue;
+            }
+
+            path = path.replace(/\s{2,}/g, " "); //replace extra spaces
+
             if (path.match(/-?\d*\.?\d+e[+-]?\d+/g)) {
                 warnings.pushUnique("found some numbers with scientific E notation in pathData which Android probably does not support. " +
                 "Please fix It manually by editing your editor precision or manually by editing pathData");
@@ -243,6 +251,8 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
     }
 
     for (var i = 0; i < paths.length; i++) {
+        if (paths[i] === null) continue;
+
         var attribute = attributes[i];
 
         //Parent opacity setting - multiply fill-opacity and stroke-opacity
