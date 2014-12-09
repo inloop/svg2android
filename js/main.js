@@ -270,6 +270,11 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
             }
         }
 
+        //If fill is omitted use default black
+        if (typeof attribute["fill"] === "undefined") {
+            attribute["fill"] = "#000000";
+        }
+
         output += s + '<path\n';
         output += generateAttr('fillColor', attribute["fill"] , isGroup, "none");
         output += generateAttr('fillAlpha', attribute["fill-opacity"], isGroup, "1");
