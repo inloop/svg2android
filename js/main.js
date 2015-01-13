@@ -153,6 +153,7 @@ function parseFile(inputXml) {
             });
 
             path = pathRebuild.replace("m", START_PATH).replace("z", END_PATH);
+            path = path.replace(/(\.\d+)(\.\d)/g, "\$1 \$2");
 
             //Convert attributes to style
             var attributes = $(paths[i])[0].attributes;
