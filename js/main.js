@@ -335,7 +335,6 @@ function setMessage(text, type) {
 }
 
 function wordwrap( str, width, brk, cut ) {
-
     brk = brk || '\n';
     width = width || 75;
     cut = cut || false;
@@ -344,6 +343,11 @@ function wordwrap( str, width, brk, cut ) {
 
     var regex = '.{1,' +width+ '}(\\s|$)' + (cut ? '|.{' +width+ '}|.+$' : '|\\S+?(\\s|$)');
 
-    return str.match( new RegExp(regex, 'g') ).join( brk );
+    var matches = str.match( new RegExp(regex, 'g') );
+    // trim off leading/trailing spaces from the matched strings
+    for (i = 0; i < matches.length; i++) {
+    	matches[i] = matches[i].trim();
+    }
 
+    return matches.join( brk );
 }
