@@ -48,6 +48,9 @@ if (typeof FileReader === "undefined") {
 }
 /* ------ */
 
+var DRAW_LINE = "l"; //used as default parameter when no found in path
+var START_PATH = "M";
+var END_PATH = "Z";
 
 function loadFile(e, file) {
     lastFileName = extractFileNameWithoutExt(file.name) || "";
@@ -84,10 +87,6 @@ function parseFile(inputXml) {
         setMessage("No path found, you must convert all your objects into path.", "alert-danger");
         $("#output-box").hide();
     } else {
-
-        var DRAW_LINE = "l"; //used as default parameter when no found in path
-        var START_PATH = "M";
-        var END_PATH = "Z";
         var stylesJson = [];
         var warnings = [];
         var groupTransform = null;
@@ -152,7 +151,7 @@ function parseFile(inputXml) {
                 pathRebuild += t + " ";
             });
 
-            path = pathRebuild.replace("m", START_PATH).replace("z", END_PATH);
+            path = fixPathPositioning(pathRebuild);
             path = fixNumberFormatting(path);
 
             //Convert attributes to style
@@ -206,6 +205,10 @@ function parseFile(inputXml) {
             setMessage("<table class='info-items'>" + warnText + "</table>", "alert-warning")
         }
     }
+}
+
+function fixPathPositioning(path) {
+    return path.replace(/^\s*m/, START_PATH).replace(/^\s*z/, END_PATH);
 }
 
 function fixNumberFormatting(path) {
