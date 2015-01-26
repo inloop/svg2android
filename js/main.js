@@ -153,7 +153,7 @@ function parseFile(inputXml) {
             });
 
             path = pathRebuild.replace("m", START_PATH).replace("z", END_PATH);
-            path = path.replace(/(\.\d+)(\.\d)/g, "\$1 \$2");
+            path = fixNumberFormatting(path);
 
             //Convert attributes to style
             var attributes = $(paths[i])[0].attributes;
@@ -206,6 +206,10 @@ function parseFile(inputXml) {
             setMessage("<table class='info-items'>" + warnText + "</table>", "alert-warning")
         }
     }
+}
+
+function fixNumberFormatting(path) {
+    return path.replace(/(\.\d+)(\.\d+)\s?/g, "\$1 \$2 ");
 }
 
 function getDimensions(svg) {
