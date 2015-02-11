@@ -76,9 +76,11 @@ function parseFile(inputXml) {
         $("#output-box").hide();
         return;
     }
+	
+    var warnings = [];
     var svg = xml.find("svg");
 
-    var dimensions = getDimensions(svg);
+    var dimensions = getDimensions(svg, warnings);
     var width = dimensions.width;
     var height = dimensions.height;
     var paths = xml.find("path");
@@ -88,7 +90,6 @@ function parseFile(inputXml) {
         $("#output-box").hide();
     } else {
         var stylesJson = [];
-        var warnings = [];
         var groupTransform = null;
         var transformSet = false;
 
@@ -215,12 +216,22 @@ function fixNumberFormatting(path) {
     return path.replace(/(\.\d+)(\.\d+)\s?/g, "\$1 \$2 ");
 }
 
-function getDimensions(svg) {
+function getDimensions(svg, warnings) {
     var widthAttr = svg.attr("width");
     var heightAttr = svg.attr("height");
+    var viewBoxAttr = svg.attr("viewBox");
+	
     if (typeof widthAttr === "undefined" || typeof heightAttr === "undefined") {
-        var viewBoxAttr = svg.attr("viewBox").split(/[,\s]+/);
-        return { width:viewBoxAttr[2], height:viewBoxAttr[3] };
+        if (typeof viewBoxAttr === "undefined") {
+            warnings.pushUnique("no width or height set for svg (set -1)");
+            return { width:-1, height:-1 };
+        } else {
+            var viewBoxAttrParts = viewBoxAttr.split(/[,\s]+/);
+            if (viewBoxAttrParts[0] > 0 || viewBoxAttrParts[1] > 0) {
+                warnings.pushUnique("viewbox minx/miny is other than 0 (not supported)");
+            }
+            return { width:viewBoxAttrParts[2], height:viewBoxAttrParts[3] };
+        }
     } else {
         return { width:removeNonNumeric(widthAttr), height:removeNonNumeric(heightAttr) };
     }
