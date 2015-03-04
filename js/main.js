@@ -76,11 +76,11 @@ function parseFile(inputXml) {
         $("#output-box").hide();
         return;
     }
-	
+
     var warnings = [];
     var svg = xml.find("svg");
 
-    var dimensions = getDimensions(svg, warnings);
+    var dimensions = getDimensions(svg);
     var width = dimensions.width;
     var height = dimensions.height;
     var paths = xml.find("path");
@@ -111,7 +111,7 @@ function parseFile(inputXml) {
             }
 
             //Check If parent is group, apply transform
-            if (parentTag.tagName == "g" && !transformSet) {
+            if (parentTag.tagName === "g" && !transformSet) {
                 var transform = $(parentTag).attr("transform");
                 if (typeof transform !== "undefined") {
                     groupTransform = {transformX:0,transformY:0,scaleX:1, scaleY:1};
@@ -119,10 +119,10 @@ function parseFile(inputXml) {
                     var result = null;
                     while (result = regex.exec(transform)) {
                         var split = result[3].split(/[,\s]+/);
-                        if (result[1] == "translate") {
+                        if (result[1] === "translate") {
                             groupTransform.transformX = split[0];
                             groupTransform.transformY = split[1] || 0;
-                        } else if (result[1] == "scale") {
+                        } else if (result[1] === "scale") {
                             groupTransform.scaleX = split[0];
                             groupTransform.scaleY = split[1] || 0;
                         }
@@ -216,15 +216,15 @@ function fixNumberFormatting(path) {
     return path.replace(/(\.\d+)(\.\d+)\s?/g, "\$1 \$2 ");
 }
 
-function getDimensions(svg, warnings) {
+function getDimensions(svg) {
     var widthAttr = svg.attr("width");
     var heightAttr = svg.attr("height");
     var viewBoxAttr = svg.attr("viewBox");
-	
+
     if (typeof widthAttr === "undefined" || typeof heightAttr === "undefined") {
         if (typeof viewBoxAttr === "undefined") {
             warnings.pushUnique("no width or height set for svg (set -1)");
-            return { width:-1, height:-1 };
+            return { width: -1, height: -1};
         } else {
             var viewBoxAttrParts = viewBoxAttr.split(/[,\s]+/);
             if (viewBoxAttrParts[0] > 0 || viewBoxAttrParts[1] > 0) {
@@ -248,6 +248,13 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
 
     var output = '<?xml version="1.0" encoding="utf-8"?>\n';
     output += '<vector xmlns:android="http://schemas.android.com/apk/res/android"\n';
+    output += '    xmlns:auto="http://schemas.android.com/apk/res-auto"\n\n'
+
+    output += '    auto:mv_width="{0}dp"\n'.f(w);
+    output += '    auto:mv_height="{0}dp"\n'.f(h);
+    output += '    auto:mv_viewportWidth="{0}"\n'.f(vW);
+    output += '    auto:mv_viewportHeight="{0}"\n\n'.f(vH);
+
     output += '    android:width="{0}dp"\n'.f(w);
     output += '    android:height="{0}dp"\n'.f(h);
     output += '    android:viewportWidth="{0}"\n'.f(vW);
@@ -313,9 +320,9 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
 }
 
 function generateAttr(name, val, group, def, end) {
-    if (typeof val === "undefined" || val == def) return "";
+    if (typeof val === "undefined" || val === def) return "";
     var s = group ? '            ' : '        ';
-    return s + 'android:{0}="{1}"{2}\n'.f(name, val, end ? ' />' : '');
+    return s + 'auto:mv_{0}="{1}" android:{0}="{1}"{2}\n'.f(name, val, end ? ' />' : '');
 }
 
 function selectAll() {
