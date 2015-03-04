@@ -76,7 +76,7 @@ function parseFile(inputXml) {
         $("#output-box").hide();
         return;
     }
-	
+
     var warnings = [];
     var svg = xml.find("svg");
 
@@ -220,11 +220,11 @@ function getDimensions(svg, warnings) {
     var widthAttr = svg.attr("width");
     var heightAttr = svg.attr("height");
     var viewBoxAttr = svg.attr("viewBox");
-	
+
     if (typeof widthAttr === "undefined" || typeof heightAttr === "undefined") {
         if (typeof viewBoxAttr === "undefined") {
             warnings.pushUnique("no width or height set for svg (set -1)");
-            return { width:-1, height:-1 };
+            return { width: -1, height: -1 };
         } else {
             var viewBoxAttrParts = viewBoxAttr.split(/[,\s]+/);
             if (viewBoxAttrParts[0] > 0 || viewBoxAttrParts[1] > 0) {
@@ -248,6 +248,13 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
 
     var output = '<?xml version="1.0" encoding="utf-8"?>\n';
     output += '<vector xmlns:android="http://schemas.android.com/apk/res/android"\n';
+    output += '    xmlns:auto="http://schemas.android.com/apk/res-auto"\n\n'
+
+    output += '    auto:mv_width="{0}dp"\n'.f(w);
+    output += '    auto:mv_height="{0}dp"\n'.f(h);
+    output += '    auto:mv_viewportWidth="{0}"\n'.f(vW);
+    output += '    auto:mv_viewportHeight="{0}"\n\n'.f(vH);
+
     output += '    android:width="{0}dp"\n'.f(w);
     output += '    android:height="{0}dp"\n'.f(h);
     output += '    android:viewportWidth="{0}"\n'.f(vW);
@@ -315,7 +322,7 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
 function generateAttr(name, val, group, def, end) {
     if (typeof val === "undefined" || val == def) return "";
     var s = group ? '            ' : '        ';
-    return s + 'android:{0}="{1}"{2}\n'.f(name, val, end ? ' />' : '');
+    return s + 'auto:mv_{0}="{1}" android:{0}="{1}"{2}\n'.f(name, val, end ? ' />' : '');
 }
 
 function selectAll() {
