@@ -158,7 +158,7 @@ function parseFile(inputXml) {
 
             //Convert attributes to style
             var attributes = $(paths[i])[0].attributes;
-            stylesJson[i] = [];
+            stylesJson[i] = {};
 
             for (var n = 0; n < attributes.length; n++) {
                 var name = attributes[n].name;
