@@ -119,10 +119,11 @@ function parseFile(inputXml) {
                     var result = null;
                     while (result = regex.exec(transform)) {
                         var split = result[3].split(/[,\s]+/);
-                        if (result[1] == "translate") {
+                        var transformName = result[1].trim();
+                        if (transformName == "translate") {
                             groupTransform.transformX = split[0];
                             groupTransform.transformY = split[1] || 0;
-                        } else if (result[1] == "scale") {
+                        } else if (transformName == "scale") {
                             groupTransform.scaleX = split[0];
                             groupTransform.scaleY = split[1] || 0;
                         }
