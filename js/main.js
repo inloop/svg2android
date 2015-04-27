@@ -296,9 +296,9 @@ function generateVectorDrawable(vW, vH, w, h, paths, attributes, groupTransform)
         }
 
         output += s + '<path\n';
-        output += generateAttr('fillColor', attribute["fill"] , isGroup, "none");
+        output += generateAttr('fillColor', parseColorToHex(attribute["fill"]) , isGroup, "none");
         output += generateAttr('fillAlpha', attribute["fill-opacity"], isGroup, "1");
-        output += generateAttr('strokeColor', attribute["stroke"], isGroup, "none");
+        output += generateAttr('strokeColor', parseColorToHex(attribute["stroke"]), isGroup, "none");
         output += generateAttr('strokeAlpha', attribute["stroke-opacity"], isGroup, "1");
         output += generateAttr('strokeWidth', removeNonNumeric(attribute["stroke-width"]), isGroup, "0");
         output += generateAttr('strokeLineJoin', attribute["stroke-linejoin"], isGroup, "miter");
@@ -369,4 +369,23 @@ function wordwrap( str, width, brk, cut ) {
     }
 
     return matches.join( brk );
+}
+
+//Parse rgb, named colors to hex
+function parseColorToHex(color) {
+    if (typeof color === "undefined") return color;
+    color = color.replace(/\s/g, "");
+
+    //Is hex already
+    if (color.substr(0, 1) === "#") {
+        return color;
+    } else {
+        if (color.startsWith("rgb(")) {
+            var match = /rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/.exec(color);
+            return match !== null && match.length >= 4 ? $c.rgb2hex(parseInt(match[1]), parseInt(match[2]), parseInt(match[3])) : color;
+        } else {
+            var hexClr = $c.name2hex(color);
+            return !hexClr.startsWith("Invalid") ? hexClr : color;
+        }
+    }
 }
