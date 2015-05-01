@@ -89,21 +89,35 @@ function recursiveTreeWalk(parent, groupLevel) {
             groupLevel--;
 
             printGroupEnd(groupLevel);
-        } else if (current.is("path")) { //Path tag
-            pathsParsedCount++;
+        } else if (current.is("path")) {
             var pathD = parsePathD(current);
             if (pathD != null) {
-                var styles = parseStyles(current);
-                var parentStyles = current.parent().is("g") ? parseStyles(current.parent()) : null;
-
-                printPath(pathD, styles, parentStyles, groupLevel);
+                printPath(pathD, getStyles(current), groupLevel);
             } else {
                 warnings.pushUnique("found path(s) without data (empty or invalid parameter <i>d</i>)");
             }
-        } else if (current.is("rect") || current.is("ellipse") || current.is("line") || current.is("polyline") || current.is("polygon")) {
-            warnings.pushUnique("found basic shapes which are not currently supported yet, export all objects into path");
+        } else if (current.is("line")) {
+            printPath(ShapeConverter.convertLine(current), getStyles(current), groupLevel);
+        } else if (current.is("rect")) {
+            printPath(ShapeConverter.convertRect(current), getStyles(current), groupLevel);
+        } else if (current.is("circle")) {
+            printPath(ShapeConverter.convertCircle(current), getStyles(current), groupLevel);
+        } else if (current.is("ellipse")) {
+            printPath(ShapeConverter.convertEllipse(current), getStyles(current), groupLevel);
+        } else if (current.is("polyline")) {
+            printPath(ShapeConverter.convertPolygon(current, true), getStyles(current), groupLevel);
+        } else if (current.is("polygon")) {
+            printPath(ShapeConverter.convertPolygon(current, false), getStyles(current), groupLevel);
+        } else if (current.is("text")) {
+            warnings.pushUnique("<i>text</i> element is not supported, export all text into path");
         }
     });
+}
+
+function getStyles(el) {
+    var styles = parseStyles(el);
+    var parentStyles = el.parent().is("g") ? parseStyles(el.parent()) : null;
+    return [styles, parentStyles];
 }
 
 function parseGroup(groupTag) {
@@ -121,6 +135,8 @@ function parseGroup(groupTag) {
             } else if (transformName == "scale") {
                 groupTransform.scaleX = split[0];
                 groupTransform.scaleY = split[1] || 0;
+            } else {
+                warnings.pushUnique("group transform '<i>" + transformName + "</i>' is not supported")
             }
         }
     }
@@ -223,7 +239,14 @@ function printGroupEnd(groupLevel) {
     generatedOutput += INDENT.repeat(groupLevel + 1) + '</group>\n';
 }
 
-function printPath(pathData, styles, parentGroupStyles, groupLevel) {
+function printPath(pathData, stylesArray, groupLevel) {
+    var styles = stylesArray[0];
+    var parentGroupStyles = stylesArray[1];
+
+    if (pathData == null) {
+        return;
+    }
+
     if (parentGroupStyles != null) {
         //Inherit styles from group first
         for (var styleName in parentGroupStyles) {
@@ -262,6 +285,7 @@ function printPath(pathData, styles, parentGroupStyles, groupLevel) {
     generatedOutput += generateAttr('strokeMiterLimit', styles["stroke-miterlimit"], groupLevel, "4");
     generatedOutput += generateAttr('strokeLineCap', styles["stroke-linecap"], groupLevel, "butt");
     generatedOutput += generateAttr('pathData', pathData, groupLevel, null, true);
+    pathsParsedCount++;
 }
 
 function parseFile(inputXml) {
@@ -270,13 +294,6 @@ function parseFile(inputXml) {
         xml = $($.parseXML(inputXml));
     } catch (e) {
         setMessage("<b>Error:</b> not valid SVG file.", "alert-danger");
-        $("#output-box").hide();
-        return;
-    }
-
-    //SVG must contain path(s)
-    if (xml.find("path").length == 0) {
-        setMessage("No path found, you must convert all your objects into path.", "alert-danger");
         $("#output-box").hide();
         return;
     }
@@ -306,6 +323,13 @@ function parseFile(inputXml) {
 
     //XML Vector end
     generatedOutput += '</vector>';
+
+    //SVG must contain path(s)
+    if (pathsParsedCount == 0) {
+        setMessage("No shape elements found in svg.", "alert-danger");
+        $("#output-box").hide();
+        return;
+    }
 
     $("#output-code").text(generatedOutput).animate({scrollTop: 0}, "fast");
     $("#output-box").fadeIn();

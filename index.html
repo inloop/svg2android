@@ -42,7 +42,7 @@
             <b>Drop file here</b> to load content or click on this box to open file dialog.<br/>
             <div class="nouploadinfo small">No file will be uploaded - uses only JavaScript HTML5 FileReader.<br /><br /></div>
 
-            <div class="nouploadinfo small alert alert-warning" style="display: inline-block">Only supports <i>path</i> svg element - you must export svg object(s) into path(s) in your editor.<br/>
+            <div class="nouploadinfo small alert alert-warning" style="display: inline-block"><b>Now supports path, line, rect, circle, ellipse, polyline and polygon elements.</b><br/>
                 Keep in mind that Android does support svg files only partially.</div>
         </div>
     </div>
@@ -84,7 +84,8 @@
 <script src='js/filereader.js'></script>
 <script src='js/filesaver.min.js'></script>
 <script src='js/colors.min.js'></script>
-<script src="js/main.js?v=10"></script>
+<script src="js/svg_shape_converter.js"></script>
+<script src="js/main.js?v=11"></script>
 
 <script>
     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
