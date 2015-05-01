@@ -1,10 +1,15 @@
 [![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-svg2android-brightgreen.svg?style=flat)](https://android-arsenal.com/details/1/1061)
-svg2android (alpha)
+svg2android
 ===========
 
 *Convert SVG to Android VectorDrawable XML resource file.*
 
-Multiple paths are grouped in `<group>`, extracts all parameters of path that are supported in android (except _name_ and _trim*_ attributes)
+Extracts all parameters of elements and groups that are supported in Android. 
+
+**Supported:** path, line, rect, circle, ellipse, polyline and polygon elements.
+
+**Not supported:** text element (export manually to path), gradients and patterns, matrix transforms
+
 
 ##### Example of imported svg (random image from wikipedia):
 ![](https://github.com/inloop/svg2android/raw/gh-pages/img/example_imported_svg.png "Screenshot")
