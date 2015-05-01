@@ -305,7 +305,7 @@ function parseFile(inputXml) {
     var svg = xml.find("svg");
 
     //Parse dimensions
-    var dimensions = getDimensions(svg, warnings);
+    var dimensions = getDimensions(svg);
     var width = dimensions.width;
     var height = dimensions.height;
 
@@ -356,25 +356,26 @@ function fixNumberFormatting(path) {
     return path.replace(/(\.\d+)(\.\d+)\s?/g, "\$1 \$2 ");
 }
 
-function getDimensions(svg, warnings) {
+function getDimensions(svg) {
     var widthAttr = svg.attr("width");
     var heightAttr = svg.attr("height");
     var viewBoxAttr = svg.attr("viewBox");
 
-    if (typeof widthAttr === "undefined" || typeof heightAttr === "undefined") {
-        if (typeof viewBoxAttr === "undefined") {
-            warnings.pushUnique("no width or height set for svg (set -1)");
+    if (typeof viewBoxAttr === "undefined") {
+        if (typeof widthAttr === "undefined" || typeof heightAttr === "undefined") {
+            warnings.pushUnique("width or height not set for svg (set -1)");
             return {width: -1, height: -1};
         } else {
-            var viewBoxAttrParts = viewBoxAttr.split(/[,\s]+/);
-            if (viewBoxAttrParts[0] > 0 || viewBoxAttrParts[1] > 0) {
-                warnings.pushUnique("viewbox minx/miny is other than 0 (not supported)");
-            }
-            return {width: viewBoxAttrParts[2], height: viewBoxAttrParts[3]};
+            return {width: convertDimensionToPx(widthAttr), height: convertDimensionToPx(heightAttr)};
         }
     } else {
-        return {width: removeNonNumeric(widthAttr), height: removeNonNumeric(heightAttr)};
+        var viewBoxAttrParts = viewBoxAttr.split(/[,\s]+/);
+        if (viewBoxAttrParts[0] > 0 || viewBoxAttrParts[1] > 0) {
+            warnings.pushUnique("viewbox minx/miny is other than 0 (not supported)");
+        }
+        return {width: viewBoxAttrParts[2], height: viewBoxAttrParts[3]};
     }
+
 }
 
 function removeNonNumeric(input) {
@@ -458,5 +459,32 @@ function parseColorToHex(color) {
             var hexClr = $c.name2hex(color);
             return !hexClr.startsWith("Invalid") ? hexClr : color;
         }
+    }
+}
+
+function convertDimensionToPx(dimen) {
+    var val = removeNonNumeric(dimen);
+    var METER_TO_PX = 3543.30709;
+    var INCH_TO_PX = 90;
+    var PT_TO_PX = 1.25;
+    var PC_TO_PX = 15;
+    var FT_TO_PX = 1080;
+
+    if (dimen.endsWith("mm")) {
+        return val * (METER_TO_PX / 1000);
+    } else if (dimen.endsWith("cm")) {
+        return val * (METER_TO_PX / 100);
+    } else if (dimen.endsWith("m")) {
+        return val * METER_TO_PX;
+    } else if (dimen.endsWith("in")) {
+        return val * INCH_TO_PX;
+    } else if (dimen.endsWith("pt")) {
+        return val * PT_TO_PX;
+    } else if (dimen.endsWith("pc")) {
+        return val * PC_TO_PX;
+    } else if (dimen.endsWith("ft")) {
+        return val * FT_TO_PX;
+    } else {
+        return val;
     }
 }
