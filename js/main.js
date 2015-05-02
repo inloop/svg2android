@@ -21,6 +21,10 @@ String.prototype.repeat = function (num) {
     return new Array(num + 1).join(this);
 };
 
+function toBool(s) {
+    return (typeof s !== "undefined" && "false" !== s);
+}
+
 if (typeof String.prototype.endsWith !== 'function') {
     String.prototype.endsWith = function (suffix) {
         return this.indexOf(suffix, this.length - suffix.length) !== -1;
@@ -59,11 +63,13 @@ var INDENT = "    ";
 var pathsParsedCount = 0;
 var generatedOutput = "";
 var lastFileName = "";
+var lastFileData;
 var warnings = [];
 
 function loadFile(e, file) {
     lastFileName = extractFileNameWithoutExt(file.name) || "";
     $(".alert").hide();
+    $("#opt-id-as-name").prop("checked", toBool(localStorage.useIdAsName));
     parseFile(e.target.result);
 }
 
@@ -122,7 +128,8 @@ function getStyles(el) {
 
 function parseGroup(groupTag) {
     var transform = groupTag.attr("transform");
-    var groupTransform = {transformX: 0, transformY: 0, scaleX: 1, scaleY: 1};
+    var id = groupTag.attr("id");
+    var groupTransform = {transformX: 0, transformY: 0, scaleX: 1, scaleY: 1, id:""};
     if (typeof transform !== "undefined") {
         var regex = /((\w|\s)+)\(([^)]+)/mg;
         var result;
@@ -139,6 +146,9 @@ function parseGroup(groupTag) {
                 warnings.pushUnique("group transform '<i>" + transformName + "</i>' is not supported")
             }
         }
+    }
+    if (typeof id !== "undefined") {
+        groupTransform.id = id;
     }
 
     return groupTransform;
@@ -225,6 +235,7 @@ function parseStyles(path) {
 
 function printGroupStart(groupTransform, groupLevel) {
     generatedOutput += INDENT.repeat(groupLevel + 1) + '<group\n';
+    if (toBool(localStorage.useIdAsName)) generatedOutput += generateAttr("name", groupTransform.id, groupLevel + 1, "");
     generatedOutput += generateAttr("translateX", groupTransform.transformX, groupLevel + 1, 0);
     generatedOutput += generateAttr("translateY", groupTransform.transformY, groupLevel + 1, 0);
     generatedOutput += generateAttr("scaleX", groupTransform.scaleX, groupLevel + 1, 1);
@@ -276,6 +287,7 @@ function printPath(pathData, stylesArray, groupLevel) {
     }
 
     generatedOutput += INDENT.repeat(groupLevel + 1) + '<path\n';
+    if (toBool(localStorage.useIdAsName)) generatedOutput += generateAttr('name', styles["id"], groupLevel, "");
     generatedOutput += generateAttr('fillColor', parseColorToHex(styles["fill"]), groupLevel, "none");
     generatedOutput += generateAttr('fillAlpha', styles["fill-opacity"], groupLevel, "1");
     generatedOutput += generateAttr('strokeColor', parseColorToHex(styles["stroke"]), groupLevel, "none");
@@ -289,6 +301,8 @@ function printPath(pathData, stylesArray, groupLevel) {
 }
 
 function parseFile(inputXml) {
+    lastFileData = inputXml;
+
     var xml;
     try {
         xml = $($.parseXML(inputXml));
@@ -421,6 +435,11 @@ function setMessage(text, type) {
     info.addClass("box");
     info.addClass(type);
     info.show();
+}
+
+function useIdAsName(el) {
+    localStorage.useIdAsName = el.checked;
+    parseFile(lastFileData);
 }
 
 function wordwrap(str, width, brk, cut) {
