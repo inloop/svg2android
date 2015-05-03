@@ -270,6 +270,10 @@ function printPath(pathData, stylesArray, groupLevel) {
         return;
     }
 
+    if (styles.hasOwnProperty("transform")) {
+        warnings.pushUnique("transforms on path are not supported, use option <i>Bake transforms into path</i>")
+    }
+
     if (parentGroupStyles != null) {
         //Inherit styles from group first
         for (var styleName in parentGroupStyles) {
