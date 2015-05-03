@@ -332,7 +332,7 @@ function parseFile(inputXml) {
     var svg = xml.find("svg");
 
     if (toBool(localStorage.bakeTransforms)) {
-        flatten(svg[0], true, true, null, 2);
+        flatten(svg[0], false, true);
     }
 
     //Parse dimensions
