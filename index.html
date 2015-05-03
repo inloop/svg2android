@@ -67,6 +67,20 @@
             <label>
                 <input type="checkbox" id="opt-id-as-name" onchange="useIdAsName(this);">Import IDs from SVG as name
             </label>
+
+        </div>
+
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" id="clear-groups" onchange="clearGroups(this);">Remove empty groups without attributes
+            </label>
+
+        </div>
+
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" id="bake-transforms" onchange="bakeTransforms(this);"><i>Bake transforms into path (experimental)</i>
+            </label>
         </div>
     </div>
 </div>
@@ -91,7 +105,8 @@
 <script src='js/filesaver.min.js'></script>
 <script src='js/colors.min.js'></script>
 <script src="js/svg_shape_converter.js"></script>
-<script src="js/main.js?v=13"></script>
+<script src="js/flatten.js"></script>
+<script src="js/main.js?v=14"></script>
 
 <script>
     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

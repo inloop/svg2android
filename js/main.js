@@ -21,8 +21,11 @@ String.prototype.repeat = function (num) {
     return new Array(num + 1).join(this);
 };
 
-function toBool(s) {
-    return (typeof s !== "undefined" && "false" !== s);
+function toBool(s, defValue) {
+    if (typeof s === "undefined") {
+        return typeof defValue !== "undefined" ? defValue : false;
+    }
+    return "false" !== s;
 }
 
 if (typeof String.prototype.endsWith !== 'function') {
@@ -68,8 +71,9 @@ var warnings = [];
 
 function loadFile(e, file) {
     lastFileName = extractFileNameWithoutExt(file.name) || "";
-    $(".alert").hide();
     $("#opt-id-as-name").prop("checked", toBool(localStorage.useIdAsName));
+    $("#bake-transforms").prop("checked", toBool(localStorage.bakeTransforms));
+    $("#clear-groups").prop("checked", toBool(localStorage.clearGroups, true));
     parseFile(e.target.result);
 }
 
@@ -88,13 +92,14 @@ function recursiveTreeWalk(parent, groupLevel) {
         var current = $(this);
         if (current.is("g") && current.children().length > 0) { //Group tag, ignore empty groups
             var group = parseGroup(current);
-            printGroupStart(group, groupLevel);
+            var ignoreGroup = !(toBool(localStorage.clearGroups, true) && !group.isSet);
+            if (ignoreGroup) printGroupStart(group, groupLevel);
 
-            groupLevel++;
+            if (ignoreGroup) groupLevel++;
             recursiveTreeWalk(current, groupLevel);
-            groupLevel--;
+            if (ignoreGroup) groupLevel--;
 
-            printGroupEnd(groupLevel);
+            if (ignoreGroup) printGroupEnd(groupLevel);
         } else if (current.is("path")) {
             var pathD = parsePathD(current);
             if (pathD != null) {
@@ -129,7 +134,7 @@ function getStyles(el) {
 function parseGroup(groupTag) {
     var transform = groupTag.attr("transform");
     var id = groupTag.attr("id");
-    var groupTransform = {transformX: 0, transformY: 0, scaleX: 1, scaleY: 1, id:""};
+    var groupTransform = {transformX: 0, transformY: 0, scaleX: 1, scaleY: 1, rotate:0, rotatePivotX:-1, rotatePivotY:-1, id:"", isSet:false};
     if (typeof transform !== "undefined") {
         var regex = /((\w|\s)+)\(([^)]+)/mg;
         var result;
@@ -139,11 +144,18 @@ function parseGroup(groupTag) {
             if (transformName == "translate") {
                 groupTransform.transformX = split[0];
                 groupTransform.transformY = split[1] || 0;
+                groupTransform.isSet = true;
             } else if (transformName == "scale") {
                 groupTransform.scaleX = split[0];
                 groupTransform.scaleY = split[1] || 0;
+                groupTransform.isSet = true;
+            } else if (transformName == "rotate") {
+                groupTransform.rotate = split[0];
+                groupTransform.rotatePivotX = split[1] || -1;
+                groupTransform.rotatePivotY = split[2] || -1;
+                groupTransform.isSet = true;
             } else {
-                warnings.pushUnique("group transform '<i>" + transformName + "</i>' is not supported")
+                warnings.pushUnique("group transform '<i>" + transformName + "</i>' is not supported, use option <i>Bake transforms into path</i>")
             }
         }
     }
@@ -302,6 +314,7 @@ function printPath(pathData, stylesArray, groupLevel) {
 
 function parseFile(inputXml) {
     lastFileData = inputXml;
+    $(".alert").hide();
 
     var xml;
     try {
@@ -317,6 +330,10 @@ function parseFile(inputXml) {
     warnings = [];
 
     var svg = xml.find("svg");
+
+    if (toBool(localStorage.bakeTransforms)) {
+        flatten(svg[0], true, true, null, 2);
+    }
 
     //Parse dimensions
     var dimensions = getDimensions(svg);
@@ -439,6 +456,16 @@ function setMessage(text, type) {
 
 function useIdAsName(el) {
     localStorage.useIdAsName = el.checked;
+    parseFile(lastFileData);
+}
+
+function bakeTransforms(el) {
+    localStorage.bakeTransforms = el.checked;
+    parseFile(lastFileData);
+}
+
+function clearGroups(el) {
+    localStorage.clearGroups = el.checked;
     parseFile(lastFileData);
 }
 
