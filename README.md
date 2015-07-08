@@ -10,7 +10,6 @@ Extracts all parameters of elements and groups that are supported in Android.
 
 **Not supported:** text element (export manually to path), gradients and patterns, matrix transforms
 
-
 ##### Example of imported svg (random image from wikipedia):
 ![](https://github.com/inloop/svg2android/raw/gh-pages/img/example_imported_svg.png "Screenshot")
 
