@@ -74,6 +74,7 @@ function loadFile(e, file) {
     $("#opt-id-as-name").prop("checked", toBool(localStorage.useIdAsName));
     $("#bake-transforms").prop("checked", toBool(localStorage.bakeTransforms));
     $("#clear-groups").prop("checked", toBool(localStorage.clearGroups, true));
+    $("#add-vector-compat").prop("checked", toBool(localStorage.addVectorCompat));
     parseFile(e.target.result);
 }
 
@@ -344,13 +345,31 @@ function parseFile(inputXml) {
     var width = dimensions.width;
     var height = dimensions.height;
 
+    var addVectorCompat = toBool(localStorage.addVectorCompat);
+
     //XML Vector start
     generatedOutput = '<?xml version="1.0" encoding="utf-8"?>\n';
-    generatedOutput += '<vector xmlns:android="http://schemas.android.com/apk/res/android"\n';
-    generatedOutput += INDENT + 'android:width="{0}dp"\n'.f(width);
+    generatedOutput += '<vector xmlns:android="http://schemas.android.com/apk/res/android"';
+    if (addVectorCompat) {
+        generatedOutput += '\n' + INDENT + 'xmlns:app="http://schemas.android.com/apk/res-auto"';
+        //These two lines aren't required, but they disable warnings by the Android linter
+        generatedOutput += '\n' + INDENT + 'xmlns:tools="http://schemas.android.com/tools"';
+        generatedOutput += '\n' + INDENT + 'tools:targetApi="21"';
+    }
+    generatedOutput += '\n' + INDENT + 'android:width="{0}dp"\n'.f(width);
     generatedOutput += INDENT + 'android:height="{0}dp"\n'.f(height);
+
     generatedOutput += INDENT + 'android:viewportWidth="{0}"\n'.f(width);
-    generatedOutput += INDENT + 'android:viewportHeight="{0}">\n\n'.f(height);
+    if (addVectorCompat) {
+        generatedOutput += INDENT + 'app:vc_viewportWidth="{0}"\n'.f(width);
+    }
+
+    generatedOutput += INDENT + 'android:viewportHeight="{0}"'.f(height);
+    if (addVectorCompat) {
+        generatedOutput += '\n' + INDENT + 'app:vc_viewportHeight="{0}"'.f(height);
+    }
+
+    generatedOutput += '>\n\n';
 
     //XML Vector content
     //Iterate through groups and paths
@@ -421,7 +440,18 @@ function removeNonNumeric(input) {
 
 function generateAttr(name, val, groupLevel, def, end) {
     if (typeof val === "undefined" || val == def) return "";
-    return INDENT.repeat(groupLevel + 2) + 'android:{0}="{1}"{2}\n'.f(name, val, end ? ' />' : '');
+    var addVectorCompat = toBool(localStorage.addVectorCompat);
+
+    var result = INDENT.repeat(groupLevel + 2) + 'android:{0}="{1}"'.f(name, val);
+
+    if (addVectorCompat) {
+        result += '\n' + INDENT.repeat(groupLevel + 2) + 'app:vc_{0}="{1}"'.f(name, val);
+    }
+    if (end) {
+        result += ' />';
+    }
+    result += '\n';
+    return result;
 }
 
 function selectAll() {
@@ -471,6 +501,11 @@ function bakeTransforms(el) {
 function clearGroups(el) {
     localStorage.clearGroups = el.checked;
     parseFile(lastFileData);
+}
+
+function addVectorCompatSupport(el) {
+  localStorage.addVectorCompat = el.checked;
+  parseFile(lastFileData);
 }
 
 function wordwrap(str, width, brk, cut) {
