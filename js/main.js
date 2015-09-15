@@ -42,10 +42,63 @@ if (typeof String.prototype.startsWith !== 'function') {
 
 /* ------ */
 
+var groupData = { groupSize:0, zip:null, log:[], errors:0, files:[]};
+
 var fileReaderOpts = {
     dragClass: "drag", readAsDefault: "Text", on: {
         load: function (e, file) {
-            loadFile(e, file)
+            if (groupData.groupSize == 1) {
+                loadFile(e, file, false)
+            } else {
+                groupData.files.push({e: e, file: file});
+            }
+        },
+        groupstart: function (g) {
+            resetGroupData();
+            groupData.zip = new JSZip();
+            groupData.groupSize = g.files.length;
+        },
+        groupend: function (g) {
+            //Multiple files
+            if (groupData.groupSize > 1) {
+                groupData.groupSize = 0;
+                var dlg = $('#dlg-files');
+                var btnPrimary = dlg.find(".btn-primary");
+
+                refreshSettings();
+                dlg.find("#files-count").text(groupData.files.length);
+                btnPrimary.text("Export");
+                dlg.modal().on();
+
+                btnPrimary.removeClass("disabled");
+
+                btnPrimary.unbind("click");
+                btnPrimary.on("click", function () {
+                    if (btnPrimary.hasClass("disabled")) return;
+
+                    btnPrimary.addClass("disabled");
+                    btnPrimary.text("Please wait ...");
+
+                    //To prevent UI lag
+                    setTimeout(function () {
+                        for (var i = 0; i < groupData.files.length; i++) {
+                            var f = groupData.files[i];
+                            loadFile(f.e, f.file, true);
+                        }
+
+                        groupData.log = "<h2>Files converted: " +  (groupData.files.length - groupData.errors) + " / " + groupData.files.length + "</h2>" + groupData.log;
+                        groupData.zip.file("log.html", groupData.log);
+
+                        saveAs(groupData.zip.generate({type: "blob"}), "export.zip");
+                        dlg.modal("hide");
+                    }, 250);
+                });
+
+                dlg.unbind("hidden.bs.modal");
+                dlg.on("hidden.bs.modal", function () {
+                    resetGroupData();
+                })
+            }
         }
     }
 };
@@ -56,6 +109,11 @@ if (typeof FileReader === "undefined") {
 } else {
     $('#dropzone, #dropzone-dialog').fileReaderJS(fileReaderOpts);
 }
+
+//Copy settings to dialog
+var dlg = $('#dlg-files');
+dlg.find('.modal-body').html($("#settings-area").clone());
+
 /* ------ */
 
 var DRAW_LINE = "l"; //used as default parameter when no found in path
@@ -69,13 +127,30 @@ var lastFileName = "";
 var lastFileData;
 var warnings = [];
 
-function loadFile(e, file) {
-    lastFileName = extractFileNameWithoutExt(file.name) || "";
-    $("#opt-id-as-name").prop("checked", toBool(localStorage.useIdAsName));
-    $("#bake-transforms").prop("checked", toBool(localStorage.bakeTransforms));
-    $("#clear-groups").prop("checked", toBool(localStorage.clearGroups, true));
-    $("#add-vector-compat").prop("checked", toBool(localStorage.addVectorCompat));
-    parseFile(e.target.result);
+function loadFile(e, file, multipleFiles) {
+    lastFileName = file.name;
+    refreshSettings();
+
+    if (multipleFiles) {
+        parseMultipleFiles(e.target.result)
+    } else {
+        parseSingleFile(e.target.result);
+    }
+}
+
+function resetGroupData() {
+    groupData.zip = new JSZip();
+    groupData.log = [];
+    groupData.files = [];
+    groupData.errors = 0;
+    groupData.groupSize = 0;
+}
+
+function refreshSettings() {
+    $(".opt-id-as-name").prop("checked", toBool(localStorage.useIdAsName));
+    $(".bake-transforms").prop("checked", toBool(localStorage.bakeTransforms));
+    $(".clear-groups").prop("checked", toBool(localStorage.clearGroups, true));
+    $(".add-vector-compat").prop("checked", toBool(localStorage.addVectorCompat));
 }
 
 function extractFileNameWithoutExt(filename) {
@@ -317,17 +392,15 @@ function printPath(pathData, stylesArray, groupLevel) {
     pathsParsedCount++;
 }
 
-function parseFile(inputXml) {
-    lastFileData = inputXml;
-    $(".alert").hide();
+function generateCode(inputXml) {
+    var resultData = { error:null, warnings:null, code:null };
 
     var xml;
     try {
         xml = $($.parseXML(inputXml));
     } catch (e) {
-        setMessage("<b>Error:</b> not valid SVG file.", "alert-danger");
-        $("#output-box").hide();
-        return;
+        resultData.error = "<b>Error:</b> not valid SVG file.";
+        return resultData;
     }
 
     //Reset previous
@@ -380,25 +453,64 @@ function parseFile(inputXml) {
 
     //SVG must contain path(s)
     if (pathsParsedCount == 0) {
-        setMessage("No shape elements found in svg.", "alert-danger");
-        $("#output-box").hide();
-        return;
+        resultData.error = "No shape elements found in svg.";
+        return resultData;
     }
 
-    $("#output-code").text(generatedOutput).animate({scrollTop: 0}, "fast");
-    $("#output-box").fadeIn();
-    $(".nouploadinfo").hide();
-    $("#dropzone").animate({height: 50}, 500);
-    $("#success-box").show();
-
     if (warnings.length == 1) {
-        setMessage("<b>Warning:</b> " + warnings[0], "alert-warning")
+        resultData.warnings = "<b>Warning:</b> " + warnings[0];
     } else if (warnings.length > 1) {
         var warnText = "";
         warnings.forEach(function (w, i) {
             warnText += "<tr><td><b>Warning #" + (i + 1) + ":</b></td><td>" + w + "</td></tr>";
         });
-        setMessage("<table class='info-items'>" + warnText + "</table>", "alert-warning")
+        resultData.warnings = "<table class='info-items'>" + warnText + "</table>";
+    }
+
+    resultData.code = generatedOutput;
+
+    return resultData;
+}
+
+function parseSingleFile(inputXml) {
+    lastFileData = inputXml;
+
+    $(".alert").hide();
+
+    var data = generateCode(inputXml);
+
+    if (data.error !== null) {
+        setMessage(data.error, "alert-danger");
+        $("#output-box").hide();
+    } else {
+        if (data.warnings !== null) {
+            setMessage(data.warnings, "alert-warning");
+        }
+
+        $("#output-code").text(data.code).animate({scrollTop: 0}, "fast");
+        $("#output-box").fadeIn();
+        $(".nouploadinfo").hide();
+        $("#dropzone").animate({height: 50}, 500);
+        $("#success-box").show();
+    }
+}
+
+function parseMultipleFiles(inputXml) {
+    var data = generateCode(inputXml);
+
+    groupData.log += "<br><h4>" + lastFileName + "</h4>";
+    if (data.warnings !== null) {
+        groupData.log += data.warnings + "<br>";
+    }
+
+    if (data.error !== null) {
+        groupData.log += data.error + "<br>";
+        groupData.errors++;
+    } else {
+        if (data.warnings === null) {
+            groupData.log += "OK<br>";
+        }
+        groupData.zip.file(extractFileNameWithoutExt(lastFileName) + ".xml", data.code);
     }
 }
 
@@ -471,7 +583,8 @@ function selectAll() {
 
 function download() {
     var blob = new Blob([$("#output-code").text()], {type: "text/xml;charset=utf-8"});
-    saveAs(blob, lastFileName.length > 0 ? (lastFileName + ".xml") : "vector.xml");
+    var filename = extractFileNameWithoutExt(lastFileName) || "";
+    saveAs(blob, filename.length > 0 ? (filename + ".xml") : "vector.xml");
 }
 
 function dropzoneClick() {
@@ -490,22 +603,22 @@ function setMessage(text, type) {
 
 function useIdAsName(el) {
     localStorage.useIdAsName = el.checked;
-    parseFile(lastFileData);
+    if (groupData.groupSize == 1) parseSingleFile(lastFileData);
 }
 
 function bakeTransforms(el) {
     localStorage.bakeTransforms = el.checked;
-    parseFile(lastFileData);
+    if (groupData.groupSize == 1) parseSingleFile(lastFileData);
 }
 
 function clearGroups(el) {
     localStorage.clearGroups = el.checked;
-    parseFile(lastFileData);
+    if (groupData.groupSize == 1) parseSingleFile(lastFileData);
 }
 
 function addVectorCompatSupport(el) {
-  localStorage.addVectorCompat = el.checked;
-  parseFile(lastFileData);
+    localStorage.addVectorCompat = el.checked;
+    if (groupData.groupSize == 1) parseSingleFile(lastFileData);
 }
 
 function wordwrap(str, width, brk, cut) {
