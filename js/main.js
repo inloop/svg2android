@@ -9,17 +9,18 @@ String.prototype.f = function () {
     return s;
 };
 
-Array.prototype.pushUnique = function (item) {
-    if (this.indexOf(item) == -1) {
-        this.push(item);
-        return true;
-    }
-    return false;
-};
-
 String.prototype.repeat = function (num) {
     return new Array(num + 1).join(this);
 };
+
+function pushUnique(array, item) {
+    if (array.indexOf(item) == -1) {
+        array.push(item);
+        return true;
+    }
+    return false;
+}
+
 
 function toBool(s, defValue) {
     if (typeof s === "undefined") {
@@ -126,6 +127,7 @@ var generatedOutput = "";
 var lastFileName = "";
 var lastFileData;
 var warnings = [];
+var svgStyles = {};
 
 function loadFile(e, file, multipleFiles) {
     lastFileName = file.name;
@@ -181,7 +183,7 @@ function recursiveTreeWalk(parent, groupLevel) {
             if (pathD != null) {
                 printPath(pathD, getStyles(current), groupLevel);
             } else {
-                warnings.pushUnique("found path(s) without data (empty or invalid parameter <i>d</i>)");
+                pushUnique(warnings, "found path(s) without data (empty or invalid parameter <i>d</i>)");
             }
         } else if (current.is("line")) {
             printPath(ShapeConverter.convertLine(current), getStyles(current), groupLevel);
@@ -196,7 +198,7 @@ function recursiveTreeWalk(parent, groupLevel) {
         } else if (current.is("polygon")) {
             printPath(ShapeConverter.convertPolygon(current, false), getStyles(current), groupLevel);
         } else if (current.is("text")) {
-            warnings.pushUnique("<i>text</i> element is not supported, export all text into path");
+            pushUnique(warnings, "<i>text</i> element is not supported, export all text into path");
         }
     });
 }
@@ -231,7 +233,7 @@ function parseGroup(groupTag) {
                 groupTransform.rotatePivotY = split[2] || -1;
                 groupTransform.isSet = true;
             } else {
-                warnings.pushUnique("group transform '<i>" + transformName + "</i>' is not supported, use option <i>Bake transforms into path</i>")
+                pushUnique(warnings, "group transform '<i>" + transformName + "</i>' is not supported, use option <i>Bake transforms into path</i>")
             }
         }
     }
@@ -252,7 +254,7 @@ function parsePathD(pathData) {
     path = path.replace(/\s{2,}/g, " "); //replace extra spaces
 
     if (path.match(/-?\d*\.?\d+e[+-]?\d+/g)) {
-        warnings.pushUnique("found some numbers with scientific E notation in pathData which Android probably does not support. " +
+        pushUnique(warnings, "found some numbers with scientific E notation in pathData which Android probably does not support. " +
         "Please fix It manually by editing your editor precision or manually by editing pathData");
     }
 
@@ -304,21 +306,35 @@ function parseStyles(path) {
                 value += ";"
             }
             var cssAttributes = CSSJSON.toJSON(value).attributes;
-            for (var key in cssAttributes) {
-                if (cssAttributes.hasOwnProperty(key)) {
-                    stylesArray[key] = cssAttributes[key];
-
-                    if ((key == "fill" || key == "stroke") && cssAttributes[key].startsWith("url")) {
-                        warnings.pushUnique("found fill(s) or stroke(s) which uses <i>url()</i> (gradients and patterns are not supported in Android)");
-                    }
-                }
+            parseCssAttributes(stylesArray, cssAttributes);
+        } else if (name == "class") {
+            var val = "." + value.trim();
+            if (typeof svgStyles.children[val] !== "undefined") {
+                parseCssAttributes(stylesArray, svgStyles.children[val].attributes);
             }
         } else {
             stylesArray[name] = value;
+            checkAttribute(name, value);
         }
     }
 
     return stylesArray;
+}
+
+function parseCssAttributes(stylesArray, cssAttributes) {
+    for (var key in cssAttributes) {
+        if (cssAttributes.hasOwnProperty(key)) {
+            stylesArray[key] = cssAttributes[key];
+
+            checkAttribute(key, cssAttributes[key]);
+        }
+    }
+}
+
+function checkAttribute(key, val) {
+    if ((key == "fill" || key == "stroke") && val.startsWith("url")) {
+        pushUnique(warnings, "found fill(s) or stroke(s) which uses <i>url()</i> (gradients and patterns are not supported in Android)");
+    }
 }
 
 function printGroupStart(groupTransform, groupLevel) {
@@ -347,7 +363,7 @@ function printPath(pathData, stylesArray, groupLevel) {
     }
 
     if (styles.hasOwnProperty("transform")) {
-        warnings.pushUnique("transforms on path are not supported, use option <i>Bake transforms into path</i>")
+        pushUnique(warnings, "transforms on path are not supported, use option <i>Bake transforms into path</i>")
     }
 
     if (parentGroupStyles != null) {
@@ -406,11 +422,17 @@ function generateCode(inputXml) {
     //Reset previous
     pathsParsedCount = 0;
     warnings = [];
+    svgStyles = {};
 
     var svg = xml.find("svg");
 
     if (toBool(localStorage.bakeTransforms)) {
         flatten(svg[0], false, true);
+    }
+
+    var cssStyle = svg.find("style");
+    if (cssStyle.length) {
+        svgStyles = CSSJSON.toJSON(cssStyle.text().trim());
     }
 
     //Parse dimensions
@@ -529,7 +551,7 @@ function getDimensions(svg) {
 
     if (typeof viewBoxAttr === "undefined") {
         if (typeof widthAttr === "undefined" || typeof heightAttr === "undefined") {
-            warnings.pushUnique("width or height not set for svg (set -1)");
+            pushUnique(warnings, "width or height not set for svg (set -1)");
             return {width: -1, height: -1};
         } else {
             return {width: convertDimensionToPx(widthAttr), height: convertDimensionToPx(heightAttr)};
@@ -537,7 +559,7 @@ function getDimensions(svg) {
     } else {
         var viewBoxAttrParts = viewBoxAttr.split(/[,\s]+/);
         if (viewBoxAttrParts[0] > 0 || viewBoxAttrParts[1] > 0) {
-            warnings.pushUnique("viewbox minx/miny is other than 0 (not supported)");
+            pushUnique(warnings, "viewbox minx/miny is other than 0 (not supported)");
         }
         return {width: viewBoxAttrParts[2], height: viewBoxAttrParts[3]};
     }
