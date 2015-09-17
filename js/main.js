@@ -427,7 +427,13 @@ function generateCode(inputXml) {
     var svg = xml.find("svg");
 
     if (toBool(localStorage.bakeTransforms)) {
-        flatten(svg[0], false, true);
+        try {
+            flatten(svg[0], false, true);
+        } catch (e) {
+            console.error(e);
+            resultData.error = "<b>Error:</b> problem during parsing svg (flatten failed).";
+            return resultData;
+        }
     }
 
     var cssStyle = svg.find("style");

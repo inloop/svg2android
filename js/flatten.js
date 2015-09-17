@@ -45,7 +45,7 @@
         return arr.join(',').replace(p2s, ' $1');
     };
 
-    var decPrecision = 12;
+    var decPrecision = 6;
     var s = function (num) {
         if (decPrecision !== false) return parseFloat(num.toPrecision(decPrecision));
         else return num;
@@ -167,12 +167,12 @@
 
                     if (letter == 'V' || letter == 'H') {
                         newcoords[i][0] = 'L';
-                        newcoords[i][j] = point.x;
-                        newcoords[i][j + 1] = point.y;
+                        newcoords[i][j] = s(point.x);
+                        newcoords[i][j + 1] = s(point.y);
                     }
                     else {
-                        newcoords[i][j] = point.x;
-                        newcoords[i][j + 1] = point.y;
+                        newcoords[i][j] = s(point.x);
+                        newcoords[i][j + 1] = s(point.y);
                     }
                 }
             }
@@ -239,6 +239,7 @@
                 prevY = subpath_start.y;
             }
         }
+
         if (toAbsolute) newcoords = pathToAbsolute(newcoords);
         path_elem.setAttribute('d', convertToString(newcoords));
         path_elem.removeAttribute('transform');
