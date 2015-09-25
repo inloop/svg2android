@@ -309,7 +309,7 @@ function parseStyles(path) {
             parseCssAttributes(stylesArray, cssAttributes);
         } else if (name == "class") {
             var val = "." + value.trim();
-            if (typeof svgStyles.children[val] !== "undefined") {
+            if (typeof svgStyles.children !== "undefined" && typeof svgStyles.children[val] !== "undefined") {
                 parseCssAttributes(stylesArray, svgStyles.children[val].attributes);
             }
         } else {
