@@ -199,6 +199,8 @@ function recursiveTreeWalk(parent, groupLevel) {
             printPath(ShapeConverter.convertPolygon(current, false), getStyles(current), groupLevel);
         } else if (current.is("text")) {
             pushUnique(warnings, "<i>text</i> element is not supported, export all text into path");
+        } else if (current.is("use")) {
+            parseUseRef(parent, current, groupLevel);
         }
     });
 }
@@ -207,6 +209,32 @@ function getStyles(el) {
     var styles = parseStyles(el);
     var parentStyles = el.parent().is("g") ? parseStyles(el.parent()) : null;
     return [styles, parentStyles];
+}
+
+function parseUseRef(parent, current, groupLevel) {
+    var href = current.attr("xlink:href");
+    if (typeof href !== "undefined") {
+        href = href.trim();
+        //Check if valid href
+        if (href.length > 1 && href.startsWith("#")) {
+            //Find definition in svg
+            var defs = $(parent).find("[id='" + href.substr(1) + "']");
+            if (defs.length) {
+                //Copy overriding attributes into children
+                $.each(current.prop("attributes"), function () {
+                    defs.attr(this.name, this.value);
+                });
+
+                if (defs.children().length == 0) {
+                    recursiveTreeWalk($("<g></g>").append(defs), groupLevel);
+                } else {
+                    recursiveTreeWalk(defs, groupLevel);
+                }
+            } else {
+                console.warn("Found <use> tag but did not found appropriate block in <defs> for id " + href);
+            }
+        }
+    }
 }
 
 function parseGroup(groupTag) {
