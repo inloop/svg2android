@@ -41,6 +41,8 @@ if (typeof String.prototype.startsWith !== 'function') {
     };
 }
 
+jQuery.fn.reverse = [].reverse;
+
 /* ------ */
 
 var groupData = { groupSize:0, zip:null, log:[], errors:0, files:[]};
@@ -207,7 +209,23 @@ function recursiveTreeWalk(parent, groupLevel) {
 
 function getStyles(el) {
     var styles = parseStyles(el);
-    var parentStyles = el.parent().is("g") ? parseStyles(el.parent()) : null;
+
+    var parentStyles = null;
+
+    //Inherit all parent group styles in reversed order (to override them correctly)
+    el.parents("g").reverse().each(function () {
+        var current = $(this);
+        if (parentStyles == null) {
+            parentStyles = [];
+        }
+        jQuery.extend(parentStyles, parseStyles(current));
+    });
+
+    //Do not propagate id from group to childrens
+    if (parentStyles != null && typeof parentStyles["id"] !== "undefined") {
+        parentStyles["id"] = undefined;
+    }
+
     return [styles, parentStyles];
 }
 
