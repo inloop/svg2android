@@ -201,9 +201,14 @@ function recursiveTreeWalk(parent, groupLevel) {
             printPath(ShapeConverter.convertPolygon(current, false), getStyles(current), groupLevel);
         } else if (current.is("text")) {
             pushUnique(warnings, "<i>text</i> element is not supported, export all text into path");
-        } else if (current.is("use")) {
-            parseUseRef(parent, current, groupLevel);
         }
+    });
+}
+
+function preprocessReferences(svg, grouplevel) {
+    svg.find("use").each(function () {
+        var current = $(this);
+        substituteUseRef(svg, current);
     });
 }
 
@@ -229,7 +234,7 @@ function getStyles(el) {
     return [styles, parentStyles];
 }
 
-function parseUseRef(parent, current, groupLevel) {
+function substituteUseRef(parent, current) {
     var href = current.attr("xlink:href");
     if (typeof href !== "undefined") {
         href = href.trim();
@@ -238,16 +243,14 @@ function parseUseRef(parent, current, groupLevel) {
             //Find definition in svg
             var defs = $(parent).find("[id='" + href.substr(1) + "']");
             if (defs.length) {
+                defs = defs.clone();
+
                 //Copy overriding attributes into children
                 $.each(current.prop("attributes"), function () {
                     defs.attr(this.name, this.value);
                 });
 
-                if (defs.children().length == 0) {
-                    recursiveTreeWalk($("<g></g>").append(defs), groupLevel);
-                } else {
-                    recursiveTreeWalk(defs, groupLevel);
-                }
+                current.replaceWith(defs);
             } else {
                 console.warn("Found <use> tag but did not found appropriate block in <defs> for id " + href);
             }
@@ -471,6 +474,8 @@ function generateCode(inputXml) {
     svgStyles = {};
 
     var svg = xml.find("svg");
+
+    preprocessReferences(svg);
 
     if (toBool(localStorage.bakeTransforms)) {
         try {
