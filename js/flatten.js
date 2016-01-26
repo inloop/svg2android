@@ -39,7 +39,12 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  */
+ 
 (function () {
+	
+	SVGElement.prototype.getTransformToElement = SVGElement.prototype.getTransformToElement || function(elem) {
+    return elem.getScreenCTM().inverse().multiply(this.getScreenCTM());};
+
     var p2s = /,?([achlmqrstvxz]),?/gi;
     var convertToString = function (arr) {
         return arr.join(',').replace(p2s, ' $1');
