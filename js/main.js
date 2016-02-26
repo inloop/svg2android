@@ -154,7 +154,6 @@ function refreshSettings() {
     $(".opt-id-as-name").prop("checked", toBool(localStorage.useIdAsName));
     $(".bake-transforms").prop("checked", toBool(localStorage.bakeTransforms));
     $(".clear-groups").prop("checked", toBool(localStorage.clearGroups, true));
-    $(".add-vector-compat").prop("checked", toBool(localStorage.addVectorCompat));
 }
 
 function extractFileNameWithoutExt(filename) {
@@ -497,29 +496,15 @@ function generateCode(inputXml) {
     var width = dimensions.width;
     var height = dimensions.height;
 
-    var addVectorCompat = toBool(localStorage.addVectorCompat);
-
     //XML Vector start
     generatedOutput = '<?xml version="1.0" encoding="utf-8"?>\n';
     generatedOutput += '<vector xmlns:android="http://schemas.android.com/apk/res/android"';
-    if (addVectorCompat) {
-        generatedOutput += '\n' + INDENT + 'xmlns:app="http://schemas.android.com/apk/res-auto"';
-        //These two lines aren't required, but they disable warnings by the Android linter
-        generatedOutput += '\n' + INDENT + 'xmlns:tools="http://schemas.android.com/tools"';
-        generatedOutput += '\n' + INDENT + 'tools:targetApi="21"';
-    }
+
     generatedOutput += '\n' + INDENT + 'android:width="{0}dp"\n'.f(width);
     generatedOutput += INDENT + 'android:height="{0}dp"\n'.f(height);
 
     generatedOutput += INDENT + 'android:viewportWidth="{0}"\n'.f(width);
-    if (addVectorCompat) {
-        generatedOutput += INDENT + 'app:vc_viewportWidth="{0}"\n'.f(width);
-    }
-
     generatedOutput += INDENT + 'android:viewportHeight="{0}"'.f(height);
-    if (addVectorCompat) {
-        generatedOutput += '\n' + INDENT + 'app:vc_viewportHeight="{0}"'.f(height);
-    }
 
     generatedOutput += '>\n\n';
 
@@ -631,13 +616,9 @@ function removeNonNumeric(input) {
 
 function generateAttr(name, val, groupLevel, def, end) {
     if (typeof val === "undefined" || val == def) return "";
-    var addVectorCompat = toBool(localStorage.addVectorCompat);
 
     var result = INDENT.repeat(groupLevel + 2) + 'android:{0}="{1}"'.f(name, val);
 
-    if (addVectorCompat) {
-        result += '\n' + INDENT.repeat(groupLevel + 2) + 'app:vc_{0}="{1}"'.f(name, val);
-    }
     if (end) {
         result += ' />';
     }
@@ -692,11 +673,6 @@ function bakeTransforms(el) {
 
 function clearGroups(el) {
     localStorage.clearGroups = el.checked;
-    if (groupData.groupSize == 1) parseSingleFile(lastFileData);
-}
-
-function addVectorCompatSupport(el) {
-    localStorage.addVectorCompat = el.checked;
     if (groupData.groupSize == 1) parseSingleFile(lastFileData);
 }
 

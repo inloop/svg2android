@@ -26,7 +26,7 @@
     <div id="header">
         <img src="img/android.png" class="img-responsive pull-left" style="padding-right: 10px" />
         <h3>Android SVG to VectorDrawable</h3>
-        <p>feature of Android Lollipop</p>
+        <p>...one VectorDrawable to rule all screen densities</p>
     </div>
 
     <div id="compat-error" class="alert alert-danger" style="display: none">
@@ -42,8 +42,10 @@
             <b>Drop file here</b> (or multiple files) to load content or click on this box to open file dialog.<br/>
             <div class="nouploadinfo small">No file will be uploaded - uses only JavaScript HTML5 FileReader.<br /><br /></div>
 
-            <div class="nouploadinfo small alert alert-warning" style="display: inline-block"><b>Now supports path, line, rect, circle, ellipse, polyline and polygon elements.</b><br/>
-                Keep in mind that Android does support svg files only partially.<br/>Please report wrongly converted SVGs by filling an issue on github.</div>
+            <div class="nouploadinfo small alert alert-warning" style="display: inline-block">
+                Keep in mind that Android does support svg files only partially.<br/>
+                Please report wrongly converted SVGs by filling an issue on github.
+            </div>
         </div>
     </div>
 
@@ -78,15 +80,11 @@
 
             <div class="checkbox">
                 <label>
-                  <input type="checkbox" class="add-vector-compat" onchange="addVectorCompatSupport(this);">Add <a target="_blank" href="https://github.com/wnafee/vector-compat">vector-compat</a> tags (for Android 4.0+ support)
-                </label>
-            </div>
-
-            <div class="checkbox">
-                <label>
                     <input type="checkbox" class="bake-transforms" onchange="bakeTransforms(this);"><i>Bake transforms into path (experimental)</i>
                 </label>
             </div>
+
+            Android Support Library 23.2 has added support for VectorDrawable on Android API 7+ <a href="http://android-developers.blogspot.sk/2016/02/android-support-library-232.html" target="_blank">(more info)</a>
         </div>
     </div>
 </div>
@@ -111,7 +109,7 @@
 
 <div class="container">
     <footer>
-        &copy; 2015, Juraj Novák, <a href="http://inloop.eu/" target="_blank">inloop.eu</a><br>
+        &copy; 2016, Juraj Novák, <a href="http://inloop.eu/" target="_blank">inloop.eu</a><br>
         <small>| <a href="http://inloop.github.io/">other projects</a> |</small>
     </footer>
 </div>
@@ -131,7 +129,7 @@
 <script src="js/svg_shape_converter.js"></script>
 <script src="js/flatten.js?v=1"></script>
 <script src="js/jszip.min.js"></script>
-<script src="js/main.js?v=20"></script>
+<script src="js/main.js?v=21"></script>
 
 <script>
     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
