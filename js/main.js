@@ -644,7 +644,7 @@ function selectAll() {
 function download() {
     var blob = new Blob([$("#output-code").text()], {type: "text/xml;charset=utf-8"});
     var filename = extractFileNameWithoutExt(lastFileName) || "";
-    saveAs(blob, filename.length > 0 ? (filename + ".xml") : "vector.xml");
+    saveAs(blob, filename.length > 0 ? (filename + ".xml") : "vector.xml", true);
 }
 
 function dropzoneClick() {
