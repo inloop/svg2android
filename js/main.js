@@ -615,7 +615,7 @@ function removeNonNumeric(input) {
 
 
 function generateAttr(name, val, groupLevel, def, end) {
-    if (typeof val === "undefined" || val == def) return "";
+    if (typeof val === "undefined" || val == def || val == "null") return "";
 
     var result = INDENT.repeat(groupLevel + 2) + 'android:{0}="{1}"'.f(name, val);
 
