@@ -384,6 +384,8 @@ function parseCssAttributes(stylesArray, cssAttributes) {
 function checkAttribute(key, val) {
     if ((key == "fill" || key == "stroke") && val.startsWith("url")) {
         pushUnique(warnings, "found fill(s) or stroke(s) which uses <i>url()</i> (gradients and patterns are not supported in Android)");
+    } else if ((key == "fill-rule") && val == "evenodd") {
+        pushUnique(warnings, "found attribute 'fill-rule:evenodd' which is not supported in Android - sometimes can cause that svg will be not rendered correctly (<a target='_blank' href='https://github.com/inloop/svg2android/issues/44'>more info</a>)");
     }
 }
 
