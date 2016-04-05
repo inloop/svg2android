@@ -200,6 +200,8 @@ function recursiveTreeWalk(parent, groupLevel) {
             printPath(ShapeConverter.convertPolygon(current, false), getStyles(current), groupLevel);
         } else if (current.is("text")) {
             pushUnique(warnings, "<i>text</i> element is not supported, export all text into path");
+        } else if (current.is("image")) {
+            pushUnique(warnings, "<i>image</i> element is not supported, you must vectorize raster image");
         }
     });
 }
@@ -515,12 +517,6 @@ function generateCode(inputXml) {
     //XML Vector end
     generatedOutput += '</vector>';
 
-    //SVG must contain path(s)
-    if (pathsParsedCount == 0) {
-        resultData.error = "No shape elements found in svg.";
-        return resultData;
-    }
-
     if (warnings.length == 1) {
         resultData.warnings = "<b>Warning:</b> " + warnings[0];
     } else if (warnings.length > 1) {
@@ -529,6 +525,12 @@ function generateCode(inputXml) {
             warnText += "<tr><td><b>Warning #" + (i + 1) + ":</b></td><td>" + w + "</td></tr>";
         });
         resultData.warnings = "<table class='info-items'>" + warnText + "</table>";
+    }
+
+    //SVG must contain path(s)
+    if (pathsParsedCount == 0) {
+        resultData.error = "No shape elements found in svg.";
+        return resultData;
     }
 
     resultData.code = generatedOutput;
@@ -543,14 +545,14 @@ function parseSingleFile(inputXml) {
 
     var data = generateCode(inputXml);
 
+    if (data.warnings !== null) {
+        setMessage(data.warnings, "alert-warning");
+    }
+
     if (data.error !== null) {
         setMessage(data.error, "alert-danger");
         $("#output-box").hide();
     } else {
-        if (data.warnings !== null) {
-            setMessage(data.warnings, "alert-warning");
-        }
-
         $("#output-code").text(data.code).animate({scrollTop: 0}, "fast");
         $("#output-box").fadeIn();
         $(".nouploadinfo").hide();
