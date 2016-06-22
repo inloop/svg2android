@@ -446,6 +446,18 @@ function printPath(pathData, stylesArray, groupLevel) {
         styles["fill"] = "#000000";
     }
 
+    //If strokeWidth is needed but omitted, default to 1
+    var needsStrokeWidth = (typeof styles["stroke"] !== "undefined") || 
+        (typeof styles["stroke-opacity"] !== "undefined") || 
+        (typeof styles["stroke-alpha"] !== "undefined") || 
+        (typeof styles["stroke-linejoin"] !== "undefined") || 
+        (typeof styles["stroke-miterlimit"] !== "undefined") || 
+        (typeof styles["stroke-linecap"] !== "undefined");
+    if (needsStrokeWidth && (typeof styles["stroke-width"] === "undefined")) {
+        styles["stroke-width"] = "1";
+        pushUnique(warnings, "stroke-width not found on path one or more times. Defaulting all instances to 1.");
+    }
+
     generatedOutput += INDENT.repeat(groupLevel + 1) + '<path\n';
     if (toBool(localStorage.useIdAsName)) generatedOutput += generateAttr('name', styles["id"], groupLevel, "");
     generatedOutput += generateAttr('fillColor', parseColorToHex(styles["fill"]), groupLevel, "none");
