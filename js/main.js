@@ -113,6 +113,12 @@ if (typeof FileReader === "undefined") {
     $('#dropzone, #dropzone-dialog').fileReaderJS(fileReaderOpts);
 }
 
+if(navigator.userAgent.toLowerCase().indexOf('firefox') > -1){
+    localStorage.bakeTransforms = false;
+    $(".bake-transforms").prop("disabled", true);
+    alert("Sorry but svg2android doesn't work well on Firefox, please use Google Chrome or other browser for now.");
+}
+
 //Copy settings to dialog
 var dlg = $('#dlg-files');
 dlg.find('.modal-body').html($("#settings-area").clone());
@@ -130,6 +136,10 @@ var lastFileName = "";
 var lastFileData;
 var warnings = [];
 var svgStyles = {};
+var globalSvg;
+
+var clipPathItemsCount = 0;
+var clipPathMerged = [];
 
 function loadFile(e, file, multipleFiles) {
     lastFileName = file.name;
@@ -166,7 +176,7 @@ function extractFileNameWithoutExt(filename) {
 }
 
 //Main parse & convert logic
-function recursiveTreeWalk(parent, groupLevel) {
+function recursiveTreeWalk(parent, groupLevel, clipPath) {
     parent.children().each(function () {
         var current = $(this);
         if (current.is("g") && current.children().length > 0) { //Group tag, ignore empty groups
@@ -175,29 +185,29 @@ function recursiveTreeWalk(parent, groupLevel) {
             if (ignoreGroup) printGroupStart(group, groupLevel);
 
             if (ignoreGroup) groupLevel++;
-            recursiveTreeWalk(current, groupLevel);
+            recursiveTreeWalk(current, groupLevel, clipPath);
             if (ignoreGroup) groupLevel--;
 
             if (ignoreGroup) printGroupEnd(groupLevel);
         } else if (current.is("path")) {
             var pathD = parsePathD(current);
             if (pathD != null) {
-                printPath(pathD, getStyles(current), groupLevel);
+                printPath(pathD, getStyles(current), groupLevel, clipPath);
             } else {
                 pushUnique(warnings, "found path(s) without data (empty or invalid parameter <i>d</i>)");
             }
         } else if (current.is("line")) {
-            printPath(ShapeConverter.convertLine(current), getStyles(current), groupLevel);
+            printPath(ShapeConverter.convertLine(current), getStyles(current), groupLevel, clipPath);
         } else if (current.is("rect")) {
-            printPath(ShapeConverter.convertRect(current), getStyles(current), groupLevel);
+            printPath(ShapeConverter.convertRect(current), getStyles(current), groupLevel, clipPath);
         } else if (current.is("circle")) {
-            printPath(ShapeConverter.convertCircle(current), getStyles(current), groupLevel);
+            printPath(ShapeConverter.convertCircle(current), getStyles(current), groupLevel, clipPath);
         } else if (current.is("ellipse")) {
-            printPath(ShapeConverter.convertEllipse(current), getStyles(current), groupLevel);
+            printPath(ShapeConverter.convertEllipse(current), getStyles(current), groupLevel, clipPath);
         } else if (current.is("polyline")) {
-            printPath(ShapeConverter.convertPolygon(current, true), getStyles(current), groupLevel);
+            printPath(ShapeConverter.convertPolygon(current, true), getStyles(current), groupLevel, clipPath);
         } else if (current.is("polygon")) {
-            printPath(ShapeConverter.convertPolygon(current, false), getStyles(current), groupLevel);
+            printPath(ShapeConverter.convertPolygon(current, false), getStyles(current), groupLevel, clipPath);
         } else if (current.is("text")) {
             pushUnique(warnings, "<i>text</i> element is not supported, export all text into path");
         } else if (current.is("image")) {
@@ -206,7 +216,7 @@ function recursiveTreeWalk(parent, groupLevel) {
     });
 }
 
-function preprocessReferences(svg, grouplevel) {
+function preprocessReferences(svg) {
     svg.find("use").each(function () {
         var current = $(this);
         substituteUseRef(svg, current);
@@ -262,7 +272,8 @@ function substituteUseRef(parent, current) {
 function parseGroup(groupTag) {
     var transform = groupTag.attr("transform");
     var id = groupTag.attr("id");
-    var groupTransform = {transformX: 0, transformY: 0, scaleX: 1, scaleY: 1, rotate:0, rotatePivotX:-1, rotatePivotY:-1, id:"", isSet:false};
+    var groupTransform = {transformX: 0, transformY: 0, scaleX: 1, scaleY: 1,
+        rotate:0, rotatePivotX:-1, rotatePivotY:-1, id:"", isSet:false, clipPathId:null};
     if (typeof transform !== "undefined") {
         var regex = /((\w|\s)+)\(([^)]+)/mg;
         var result;
@@ -289,6 +300,12 @@ function parseGroup(groupTag) {
     }
     if (typeof id !== "undefined") {
         groupTransform.id = id;
+    }
+
+    var styles = getStyles(groupTag)[0];
+    if (typeof styles["clip-path"] !== "undefined") {
+        groupTransform.isSet = true;
+        groupTransform.clipPathId = styles["clip-path"];
     }
 
     return groupTransform;
@@ -400,13 +417,32 @@ function printGroupStart(groupTransform, groupLevel) {
         generatedOutput = generatedOutput.substr(0, generatedOutput.length - 1);
     }
     generatedOutput += ">\n";
+
+    checkForClipPath(groupTransform.clipPathId, groupLevel + 1);
 }
 
 function printGroupEnd(groupLevel) {
     generatedOutput += INDENT.repeat(groupLevel + 1) + '</group>\n';
 }
 
-function printPath(pathData, stylesArray, groupLevel) {
+function printClipPath(pathData, groupLevel) {
+    generatedOutput += INDENT.repeat(groupLevel + 1) + '<clip-path\n';
+    generatedOutput += generateAttr('pathData', pathData, groupLevel, null, true);
+}
+
+function checkForClipPath(clipPathAttribute, groupLevel) {
+    if (typeof clipPathAttribute !== "undefined" && clipPathAttribute != null) {
+        var clipDefs = $(globalSvg).find("[id='" + clipPathAttribute.replace(/url\(|#|\)/g, "") + "']");
+        var defCount = clipDefs.children().length;
+        if (defCount > 0) {
+            clipPathMerged = [];
+            clipPathItemsCount = defCount;
+            recursiveTreeWalk(clipDefs, groupLevel, true);
+        }
+    }
+}
+
+function printPath(pathData, stylesArray, groupLevel, clipPath) {
     var styles = stylesArray[0];
     var parentGroupStyles = stylesArray[1];
 
@@ -417,6 +453,9 @@ function printPath(pathData, stylesArray, groupLevel) {
     if (styles.hasOwnProperty("transform")) {
         pushUnique(warnings, "transforms on path are not supported, use option <i>Bake transforms into path</i>")
     }
+
+    //Check for clip-path (before inheriting styles from group)
+    checkForClipPath(styles["clip-path"], groupLevel);
 
     if (parentGroupStyles != null) {
         //Inherit styles from group first
@@ -458,18 +497,27 @@ function printPath(pathData, stylesArray, groupLevel) {
         pushUnique(warnings, "stroke-width not found on path one or more times. Defaulting all instances to 1.");
     }
 
-    generatedOutput += INDENT.repeat(groupLevel + 1) + '<path\n';
-    if (toBool(localStorage.useIdAsName)) generatedOutput += generateAttr('name', styles["id"], groupLevel, "");
-    generatedOutput += generateAttr('fillColor', parseColorToHex(styles["fill"]), groupLevel, "none");
-    generatedOutput += generateAttr('fillAlpha', styles["fill-opacity"], groupLevel, "1");
-    generatedOutput += generateAttr('strokeColor', parseColorToHex(styles["stroke"]), groupLevel, "none");
-    generatedOutput += generateAttr('strokeAlpha', styles["stroke-opacity"], groupLevel, "1");
-    generatedOutput += generateAttr('strokeWidth', removeNonNumeric(styles["stroke-width"]), groupLevel, "0");
-    generatedOutput += generateAttr('strokeLineJoin', styles["stroke-linejoin"], groupLevel, "miter");
-    generatedOutput += generateAttr('strokeMiterLimit', styles["stroke-miterlimit"], groupLevel, "4");
-    generatedOutput += generateAttr('strokeLineCap', styles["stroke-linecap"], groupLevel, "butt");
-    generatedOutput += generateAttr('pathData', pathData, groupLevel, null, true);
-    pathsParsedCount++;
+    if (!clipPath) {
+        generatedOutput += INDENT.repeat(groupLevel + 1) + '<path\n';
+        if (toBool(localStorage.useIdAsName)) generatedOutput += generateAttr('name', styles["id"], groupLevel, "");
+        generatedOutput += generateAttr('fillColor', parseColorToHex(styles["fill"]), groupLevel, "none");
+        generatedOutput += generateAttr('fillAlpha', styles["fill-opacity"], groupLevel, "1");
+        generatedOutput += generateAttr('strokeColor', parseColorToHex(styles["stroke"]), groupLevel, "none");
+        generatedOutput += generateAttr('strokeAlpha', styles["stroke-opacity"], groupLevel, "1");
+        generatedOutput += generateAttr('strokeWidth', removeNonNumeric(styles["stroke-width"]), groupLevel, "0");
+        generatedOutput += generateAttr('strokeLineJoin', styles["stroke-linejoin"], groupLevel, "miter");
+        generatedOutput += generateAttr('strokeMiterLimit', styles["stroke-miterlimit"], groupLevel, "4");
+        generatedOutput += generateAttr('strokeLineCap', styles["stroke-linecap"], groupLevel, "butt");
+        generatedOutput += generateAttr('pathData', pathData, groupLevel, null, true);
+        pathsParsedCount++;
+    } else {
+        clipPathMerged.push(pathData);
+
+        //Check If added all clipPath elements
+        if (clipPathMerged.length >= clipPathItemsCount) {
+            printClipPath(clipPathMerged.join(" "), groupLevel);
+        }
+    }
 }
 
 function generateCode(inputXml) {
@@ -489,7 +537,7 @@ function generateCode(inputXml) {
     svgStyles = {};
 
     var svg = xml.find("svg");
-
+    globalSvg = svg;
     preprocessReferences(svg);
 
     if (toBool(localStorage.bakeTransforms)) {
