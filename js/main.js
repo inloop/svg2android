@@ -138,6 +138,7 @@ var warnings = [];
 var svgStyles = {};
 var globalSvg;
 
+var clipPathEnabled = false;
 var clipPathItemsCount = 0;
 var clipPathMerged = [];
 
@@ -432,6 +433,10 @@ function printClipPath(pathData, groupLevel) {
 
 function checkForClipPath(clipPathAttribute, groupLevel) {
     if (typeof clipPathAttribute !== "undefined" && clipPathAttribute != null) {
+        if (!clipPathEnabled) {
+            pushUnique(warnings, "found clip-path(s) attribute which is not fully supported yet (try enabling support for clip-path below)");
+            return;
+        }
         var clipDefs = $(globalSvg).find("[id='" + clipPathAttribute.replace(/url\(|#|\)/g, "") + "']");
         var defCount = clipDefs.children().length;
         if (defCount > 0) {
@@ -737,6 +742,11 @@ function bakeTransforms(el) {
 
 function clearGroups(el) {
     localStorage.clearGroups = el.checked;
+    if (groupData.groupSize == 1) parseSingleFile(lastFileData);
+}
+
+function enableClipPaths(el) {
+    clipPathEnabled = el.checked;
     if (groupData.groupSize == 1) parseSingleFile(lastFileData);
 }
 
