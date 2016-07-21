@@ -712,6 +712,22 @@ function wordwrap(str, width, brk, cut) {
     return matches.join(brk);
 }
 
+function parseRgb(color) {
+    var parts = color.replace(/(rgb)|\(|\)/g, "").split(",");
+    if (parts.length == 3) { //is a valid rgb
+        var rgb = [];
+        for (var i = 0; i < parts.length; i++) {
+            var part = parts[i].trim();
+            var val = Math.max(0, parseFloat(part));
+            rgb[i] = part.endsWith("%") ? Math.round(((Math.min(100, val) / 100) * 255)) : val;
+        }
+        return rgb;
+    } else {
+        return null;
+    }
+
+}
+
 //Parse rgb, named colors to hex
 function parseColorToHex(color) {
     if (typeof color === "undefined") return color;
@@ -722,8 +738,12 @@ function parseColorToHex(color) {
         return color;
     } else {
         if (color.startsWith("rgb(")) {
-            var match = /rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/.exec(color);
-            return match !== null && match.length >= 4 ? $c.rgb2hex(parseInt(match[1]), parseInt(match[2]), parseInt(match[3])) : color;
+            var rgb = parseRgb(color);
+            if (rgb != null) {
+                return $c.rgb2hex(rgb[0], rgb[1], rgb[2]);
+            } else {
+                return color;
+            }
         } else {
             var hexClr = $c.name2hex(color);
             return !hexClr.startsWith("Invalid") ? hexClr : color;
