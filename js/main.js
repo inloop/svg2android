@@ -123,6 +123,8 @@ if(navigator.userAgent.toLowerCase().indexOf('firefox') > -1){
 var dlg = $('#dlg-files');
 dlg.find('.modal-body').html($("#settings-area").clone());
 
+showLastUpdate("svg2android");
+
 /* ------ */
 
 var DRAW_LINE = "l"; //used as default parameter when no found in path
@@ -836,4 +838,21 @@ function convertDimensionToPx(dimen) {
     } else {
         return val;
     }
+}
+
+function showLastUpdate(repo) {
+    $.get("https://api.github.com/repos/inloop/" + repo + "/git/refs/heads/gh-pages")
+        .done(function (data) {
+            $.get(data.object.url)
+                .done(function (data) {
+                    var date = data.author.date;
+                    if (date) {
+                        var lastUpdateArea = $("#last-update");
+                        lastUpdateArea.children("span").text(new Date(date).toLocaleDateString());
+                        lastUpdateArea.prop("title", "Last change: " + data.message);
+                        lastUpdateArea.tooltip();
+                        lastUpdateArea.fadeIn();
+                    }
+                });
+        });
 }

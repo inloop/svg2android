@@ -74,3 +74,10 @@ footer small a {
     position: absolute;
     right: 40px;
 }
+
+#last-update {
+    float: right;
+    margin-top: -5px;
+    color: #aed0cf;
+    display: none;
+}
