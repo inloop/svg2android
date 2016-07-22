@@ -170,10 +170,12 @@ function refreshSettings() {
 function extractFileNameWithoutExt(filename) {
     var dotIndex = filename.lastIndexOf(".");
     if (dotIndex > -1) {
-        return filename.substr(0, dotIndex);
-    } else {
-        return filename;
+        filename = filename.substr(0, dotIndex);
     }
+    filename = filename.toLowerCase();
+    filename = filename.replace(/[^a-z0-9]/gi, '_');
+
+    return filename;
 }
 
 //Main parse & convert logic
