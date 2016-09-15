@@ -410,7 +410,7 @@ function checkAttribute(key, val) {
     if ((key == "fill" || key == "stroke") && val.startsWith("url")) {
         pushUnique(warnings, "found fill(s) or stroke(s) which uses <i>url()</i> (gradients and patterns are not supported in Android)");
     } else if ((key == "fill-rule") && val == "evenodd") {
-        pushUnique(warnings, "found attribute 'fill-rule:evenodd' which is not supported in Android - sometimes can cause that svg will be not rendered correctly (<a target='_blank' href='https://github.com/inloop/svg2android/issues/44'>more info</a>)");
+        pushUnique(warnings, "found attribute 'fill-rule:evenodd' which is supported only on Android API 24 and higher - (<a target='_blank' href='https://github.com/inloop/svg2android/issues/44'>more info</a>)");
     }
 }
 
@@ -497,6 +497,13 @@ function printPath(pathData, stylesArray, groupLevel, clipPath) {
         styles["fill"] = "#000000";
     }
 
+    //Handle fill-rule
+    if (typeof styles["fill-rule"] !== "undefined" && styles["fill-rule"].toLowerCase() == "evenodd") {
+        styles["fill-rule"] = "evenOdd";
+    } else {
+        styles["fill-rule"] = "nonZero";
+    }
+
     //If strokeWidth is needed but omitted, default to 1
     var needsStrokeWidth = (typeof styles["stroke"] !== "undefined") || 
         (typeof styles["stroke-opacity"] !== "undefined") || 
@@ -514,6 +521,7 @@ function printPath(pathData, stylesArray, groupLevel, clipPath) {
         if (toBool(localStorage.useIdAsName)) generatedOutput += generateAttr('name', styles["id"], groupLevel, "");
         generatedOutput += generateAttr('fillColor', parseColorToHex(styles["fill"]), groupLevel, "none");
         generatedOutput += generateAttr('fillAlpha', styles["fill-opacity"], groupLevel, "1");
+        generatedOutput += generateAttr('fillType', styles["fill-rule"], groupLevel, "nonZero");
         generatedOutput += generateAttr('strokeColor', parseColorToHex(styles["stroke"]), groupLevel, "none");
         generatedOutput += generateAttr('strokeAlpha', styles["stroke-opacity"], groupLevel, "1");
         generatedOutput += generateAttr('strokeWidth', removeNonNumeric(styles["stroke-width"]), groupLevel, "0");
