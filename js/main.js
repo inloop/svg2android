@@ -346,7 +346,8 @@ function parsePathD(pathData) {
             bigM = t == START_PATH;
         } else if (skipMove && pathStart) {
             if (!(t.indexOf(",") == -1 && isNaN(t))) {
-                t = (bigM ? DRAW_LINE.toUpperCase() : DRAW_LINE) + " " + t;
+                //t = (bigM ? DRAW_LINE.toUpperCase() : DRAW_LINE) + " " + t;
+                //TODO: check If this condition was needed
             }
             stop = true;
         } else if (pathStart) {
