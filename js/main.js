@@ -184,7 +184,9 @@ function extractFileNameWithoutExt(filename) {
 function recursiveTreeWalk(parent, groupLevel, clipPath) {
     parent.children().each(function () {
         var current = $(this);
-        if (current.is("g") && current.children().length > 0) { //Group tag, ignore empty groups
+        if (current.is("a") && current.children().length > 0) {
+            recursiveTreeWalk(current, groupLevel, clipPath);
+        } else if (current.is("g") && current.children().length > 0) { //Group tag, ignore empty groups
             var group = parseGroup(current);
             var ignoreGroup = !(toBool(localStorage.clearGroups, true) && !group.isSet);
             if (ignoreGroup) printGroupStart(group, groupLevel);
