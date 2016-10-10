@@ -572,7 +572,7 @@ function generateCode(inputXml) {
 
     var cssStyle = svg.find("style");
     if (cssStyle.length) {
-        svgStyles = CSSJSON.toJSON(cssStyle.text().trim());
+        svgStyles = CSSJSON.toJSON(cssStyle.text().trim(), {split:true});
     }
 
     //Parse dimensions
