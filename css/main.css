@@ -29,17 +29,17 @@ footer small a {
 }
 
 .info-items td {
-    vertical-align:top;
+    vertical-align: top;
 }
 
 .info-items td:first-child {
-    width:90px;
+    width: 90px;
 }
 
 #header {
     background: #e0f2f1;
     color: #7FB6B4;
-    padding:16px;
+    padding: 16px;
     margin-left: -15px;
     margin-right: -15px;
     margin-bottom: 15px;
@@ -47,7 +47,7 @@ footer small a {
 }
 
 #header h3 {
-    margin:0;
+    margin: 0;
 }
 
 #dropzone {
@@ -61,8 +61,8 @@ footer small a {
 }
 
 #dropzone .panel-body {
-    display:table-cell;
-    vertical-align:middle;
+    display: table-cell;
+    vertical-align: middle;
 }
 
 #output-box {
