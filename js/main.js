@@ -123,6 +123,16 @@ if(navigator.userAgent.toLowerCase().indexOf('firefox') > -1){
 var dlg = $('#dlg-files');
 dlg.find('.modal-body').html($("#settings-area").clone());
 
+//Clipboard paste event
+$("body").bind("paste", function(e) {
+    var pastedData = e.originalEvent.clipboardData.getData('text');
+    if (pastedData.length > 0) {
+        groupData.groupSize = 1;
+        refreshSettings();
+        parseSingleFile(pastedData);
+    }
+});
+
 showLastUpdate("svg2android");
 
 /* ------ */
