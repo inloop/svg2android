@@ -13,7 +13,7 @@ Extracts all parameters of elements and groups that are supported in Android.
 ##### Example of imported svg (random image from wikipedia):
 ![](https://github.com/inloop/svg2android/raw/gh-pages/img/example_imported_svg.png "Screenshot")
 
-###License
+### License
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
