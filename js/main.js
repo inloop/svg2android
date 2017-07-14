@@ -515,11 +515,11 @@ function printPath(pathData, stylesArray, groupLevel, clipPath) {
     }
 
     //If strokeWidth is needed but omitted, default to 1
-    var needsStrokeWidth = (typeof styles["stroke"] !== "undefined") || 
-        (typeof styles["stroke-opacity"] !== "undefined") || 
-        (typeof styles["stroke-alpha"] !== "undefined") || 
-        (typeof styles["stroke-linejoin"] !== "undefined") || 
-        (typeof styles["stroke-miterlimit"] !== "undefined") || 
+    var needsStrokeWidth = (typeof styles["stroke"] !== "undefined") ||
+        (typeof styles["stroke-opacity"] !== "undefined") ||
+        (typeof styles["stroke-alpha"] !== "undefined") ||
+        (typeof styles["stroke-linejoin"] !== "undefined") ||
+        (typeof styles["stroke-miterlimit"] !== "undefined") ||
         (typeof styles["stroke-linecap"] !== "undefined");
     if (needsStrokeWidth && (typeof styles["stroke-width"] === "undefined")) {
         styles["stroke-width"] = "1";
@@ -589,6 +589,8 @@ function generateCode(inputXml) {
     var dimensions = getDimensions(svg);
     var width = dimensions.width;
     var height = dimensions.height;
+    var viewportWidth = dimensions.viewportWidth;
+    var viewportHeight = dimensions.viewportHeight;
 
     //XML Vector start
     generatedOutput = '<?xml version="1.0" encoding="utf-8"?>\n';
@@ -597,8 +599,8 @@ function generateCode(inputXml) {
     generatedOutput += '\n' + INDENT + 'android:width="{0}dp"\n'.f(width);
     generatedOutput += INDENT + 'android:height="{0}dp"\n'.f(height);
 
-    generatedOutput += INDENT + 'android:viewportWidth="{0}"\n'.f(width);
-    generatedOutput += INDENT + 'android:viewportHeight="{0}"'.f(height);
+    generatedOutput += INDENT + 'android:viewportWidth="{0}"\n'.f(viewportWidth);
+    generatedOutput += INDENT + 'android:viewportHeight="{0}"'.f(viewportHeight);
 
     generatedOutput += '>\n\n';
 
@@ -690,14 +692,19 @@ function getDimensions(svg) {
             pushUnique(warnings, "width or height not set for svg (set -1)");
             return {width: -1, height: -1};
         } else {
-            return {width: convertDimensionToPx(widthAttr), height: convertDimensionToPx(heightAttr)};
+            return {width: convertDimensionToPx(widthAttr), height: convertDimensionToPx(heightAttr), viewportWidth: convertDimensionToPx(widthAttr), viewportHeight: convertDimensionToPx(heightAttr)};
         }
     } else {
         var viewBoxAttrParts = viewBoxAttr.split(/[,\s]+/);
         if (viewBoxAttrParts[0] > 0 || viewBoxAttrParts[1] > 0) {
             pushUnique(warnings, "viewbox minx/miny is other than 0 (not supported)");
         }
-        return {width: viewBoxAttrParts[2], height: viewBoxAttrParts[3]};
+
+        if (typeof widthAttr === "undefined" || typeof heightAttr === "undefined") {
+            return {width: viewBoxAttrParts[2], height: viewBoxAttrParts[3], viewportWidth: viewBoxAttrParts[2], viewportHeight: viewBoxAttrParts[3]};
+        } else {
+            return {width: convertDimensionToPx(widthAttr), height: convertDimensionToPx(heightAttr), viewportWidth: viewBoxAttrParts[2], viewportHeight: viewBoxAttrParts[3]};
+        }
     }
 
 }
