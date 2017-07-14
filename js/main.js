@@ -374,7 +374,7 @@ function parsePathD(pathData) {
         path += " ";
     }
 
-    return wordwrap(path.trim(), 80, "\n");
+    return path.trim();
 }
 
 
