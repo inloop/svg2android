@@ -148,6 +148,7 @@ var lastFileName = "";
 var lastFileData;
 var warnings = [];
 var svgStyles = {};
+var gradients = {};
 var globalSvg;
 
 var clipPathEnabled = false;
@@ -235,6 +236,10 @@ function recursiveTreeWalk(parent, groupLevel, clipPath) {
 }
 
 function preprocessReferences(svg) {
+    svg.find("defs").children().each(function () {
+        var current = $(this);
+        substituteUseRef(svg, current);
+    });
     svg.find("use").each(function () {
         var current = $(this);
         substituteUseRef(svg, current);
@@ -272,14 +277,20 @@ function substituteUseRef(parent, current) {
             //Find definition in svg
             var defs = $(parent).find("[id='" + href.substr(1) + "']");
             if (defs.length) {
-                defs = defs.clone();
-
-                //Copy overriding attributes into children
-                $.each(current.prop("attributes"), function () {
-                    defs.attr(this.name, this.value);
+                //Copy non-overridden attributes
+                $.each(defs.prop("attributes"), function () {
+                    var attr = current.attr(this.name)
+                    if (typeof attr !== typeof undefined && attr !== false) {
+                        return;
+                    }
+                    current.attr(this.name, this.value);
                 });
 
-                current.replaceWith(defs);
+                //Copy children
+                defs.children().each(function () {
+                    var child = $(this);
+                    current.append(child.clone());
+                });
             } else {
                 console.warn("Found <use> tag but did not found appropriate block in <defs> for id " + href);
             }
@@ -289,6 +300,10 @@ function substituteUseRef(parent, current) {
 
 function parseGroup(groupTag) {
     var transform = groupTag.attr("transform");
+    if (typeof transform === "undefined") {
+        transform = groupTag.attr("gradientTransform");
+    }
+
     var id = groupTag.attr("id");
     var groupTransform = {transformX: 0, transformY: 0, scaleX: 1, scaleY: 1,
         rotate:0, rotatePivotX:-1, rotatePivotY:-1, id:"", isSet:false, clipPathId:null};
@@ -520,11 +535,11 @@ function printPath(pathData, stylesArray, groupLevel, clipPath) {
     }
 
     //If strokeWidth is needed but omitted, default to 1
-    var needsStrokeWidth = (typeof styles["stroke"] !== "undefined") || 
-        (typeof styles["stroke-opacity"] !== "undefined") || 
-        (typeof styles["stroke-alpha"] !== "undefined") || 
-        (typeof styles["stroke-linejoin"] !== "undefined") || 
-        (typeof styles["stroke-miterlimit"] !== "undefined") || 
+    var needsStrokeWidth = (typeof styles["stroke"] !== "undefined") ||
+        (typeof styles["stroke-opacity"] !== "undefined") ||
+        (typeof styles["stroke-alpha"] !== "undefined") ||
+        (typeof styles["stroke-linejoin"] !== "undefined") ||
+        (typeof styles["stroke-miterlimit"] !== "undefined") ||
         (typeof styles["stroke-linecap"] !== "undefined");
     if (needsStrokeWidth && (typeof styles["stroke-width"] === "undefined")) {
         styles["stroke-width"] = "1";
@@ -534,16 +549,37 @@ function printPath(pathData, stylesArray, groupLevel, clipPath) {
     if (!clipPath) {
         generatedOutput += INDENT.repeat(groupLevel + 1) + '<path\n';
         if (toBool(localStorage.useIdAsName)) generatedOutput += generateAttr('name', styles["id"], groupLevel, "");
-        generatedOutput += generateAttr('fillColor', parseColorToHex(styles["fill"]), groupLevel, "none");
+        var gradientID = null;
+        var gradientAttr = null;
+        if ((typeof styles["fill"] !== "undefined") && styles["fill"].startsWith("url(")) {
+            gradientID = styles["fill"].slice(5, -1);
+            gradientAttr = "fillColor";
+        } else {
+            generatedOutput += generateAttr('fillColor', parseColorToHex(styles["fill"]), groupLevel, "none");
+        }
         generatedOutput += generateAttr('fillAlpha', styles["fill-opacity"], groupLevel, "1");
         generatedOutput += generateAttr('fillType', styles["fill-rule"], groupLevel, "nonZero");
-        generatedOutput += generateAttr('strokeColor', parseColorToHex(styles["stroke"]), groupLevel, "none");
+        if ((typeof styles["stroke"] !== "undefined") && styles["stroke"].startsWith("url(")) {
+            gradientID = styles["stroke"].slice(5, -1);
+            gradientAttr = "strokeColor";
+        } else {
+            generatedOutput += generateAttr('strokeColor', parseColorToHex(styles["stroke"]), groupLevel, "none");
+        }
         generatedOutput += generateAttr('strokeAlpha', styles["stroke-opacity"], groupLevel, "1");
         generatedOutput += generateAttr('strokeWidth', removeNonNumeric(styles["stroke-width"]), groupLevel, "0");
         generatedOutput += generateAttr('strokeLineJoin', styles["stroke-linejoin"], groupLevel, "miter");
         generatedOutput += generateAttr('strokeMiterLimit', styles["stroke-miterlimit"], groupLevel, "4");
         generatedOutput += generateAttr('strokeLineCap', styles["stroke-linecap"], groupLevel, "butt");
-        generatedOutput += generateAttr('pathData', pathData, groupLevel, null, true);
+        if (gradientID !== null) {
+            generatedOutput += generateAttr('pathData', pathData, groupLevel, null);
+            generatedOutput += '>\n';
+            generatedOutput += INDENT.repeat(groupLevel + 2) + '<aapt:attr name="android:' + gradientAttr + '">\n';
+            generatedOutput += gradients[gradientID] + '\n';
+            generatedOutput += INDENT.repeat(groupLevel + 2) + '</aapt:attr>\n';
+            generatedOutput += INDENT.repeat(groupLevel + 1) + '</path>\n';
+        } else {
+            generatedOutput += generateAttr('pathData', pathData, groupLevel, null, true);
+        }
         pathsParsedCount++;
     } else {
         clipPathMerged.push(pathData);
@@ -553,6 +589,104 @@ function printPath(pathData, stylesArray, groupLevel, clipPath) {
             printClipPath(clipPathMerged.join(" "), groupLevel);
         }
     }
+}
+
+function parseGradients(svg) {
+    svg.find("defs").children().each(function () {
+        var current = $(this);
+        if (current.prop("tagName").endsWith("Gradient")) {
+            var transform = parseGroup(current);
+            if (typeof transform.transformX === "string") {
+                transform.transformX = parseFloat(transform.transformX);
+            }
+            if (typeof transform.transformY === "string") {
+                transform.transformX = parseFloat(transform.transformX);
+            }
+            if (typeof transform.scaleX === "string") {
+                transform.scaleX = parseFloat(transform.scaleX);
+            }
+            if (typeof transform.scaleY === "string") {
+                transform.scaleY = parseFloat(transform.scaleY);
+            }
+
+            var androidXML = '<gradient\n';
+                androidXML += generateAttr('angle', transform.rotate, 1, 0);
+            if (current.prop("tagName").startsWith("linear")) {
+                var x1 = 0.0;
+                if (typeof current.attr("x1") !== "undefined") {
+                    x1 = parseFloat(current.attr("x1")) + transform.transformX;
+                }
+                var y1 = 0.0;
+                if (typeof current.attr("y1") !== "undefined") {
+                    y1 = parseFloat(current.attr("y1")) + transform.transformY;
+                }
+                var x2 = 0.0;
+                if (typeof current.attr("x2") !== "undefined") {
+                    x2 = parseFloat(current.attr("x2")) + transform.transformX;
+                }
+                var y2 = 0.0;
+                if (typeof current.attr("y2") !== "undefined") {
+                    y2 = parseFloat(current.attr("y2")) + transform.transformY;
+                }
+
+                var width = Math.abs(x2 - x1);
+                var height = Math.abs(y2 - y1);
+                var newWidth = width * transform.scaleX;
+                var newHeight = height * transform.scaleY;
+                var dX = (width - newWidth) / 2;
+                var dY = (height - newHeight) / 2;
+                if (x1 < x2) {
+                    x1 += dX;
+                    x2 -= dX;
+                } else {
+                    x1 -= dX;
+                    x2 += dX;
+                }
+                if (y1 < y2) {
+                    y1 += dY;
+                    y2 -= dY;
+                } else {
+                    y1 -= dY;
+                    y2 += dY;
+                }
+
+                androidXML += generateAttr('startX', x1, 1, 0.0);
+                androidXML += generateAttr('startY', y1, 1, 0.0);
+                androidXML += generateAttr('endX', x2, 1, 0.0);
+                androidXML += generateAttr('endY', y2, 1, 0.0);
+                androidXML += INDENT.repeat(1) + 'android:type="linear">';
+            } else if (current.prop("tagName").startsWith("radial")) {
+                androidXML += generateAttr('centerX', parseFloat(current.attr("cx")) + transform.transformX, 1, 0.0);
+                androidXML += generateAttr('centerY', parseFloat(current.attr("cy")) + transform.transformY, 1, 0.0);
+                androidXML += generateAttr('gradientRadius', current.attr("r"), 1, "0");
+                androidXML += INDENT.repeat(1) + 'android:type="radial">';
+            }
+            current.children().each(function () {
+                var stopTag = $(this);
+                var stopStyles = parseStyles(stopTag);
+                if (typeof stopTag.attr("stop-color") !== "undefined") {
+                    stopStyles["stop-color"] = stopTag.attr("stop-color");
+                }
+                if (typeof stopTag.attr("stop-opacity") !== "undefined") {
+                    stopStyles["stop-opacity"] = stopTag.attr("stop-opacity");
+                }
+                androidXML += INDENT.repeat(2) + '<item\n';
+                androidXML += generateAttr('offset', stopTag.attr("offset"), 3, null);
+                if (typeof stopStyles["stop-opacity"] !== "undefined") {
+                    var alpha = ("0" + Math.round(parseFloat(stopStyles["stop-opacity"]) * 255).toString(16)).slice(-2)
+                    var color = parseColorToHex(stopStyles["stop-color"]).slice(-6)
+
+                    androidXML += generateAttr('color', "#"+alpha+color, 3, null, true);
+                } else if (typeof stopStyles["stop-color"] !== "undefined") {
+                    androidXML += generateAttr('color', parseColorToHex(stopStyles["stop-color"]), 3, null, true);
+                } else {
+                    androidXML += " />";
+                }
+            });
+            androidXML += '</gradient>';
+            gradients[current.attr("id")] = androidXML;
+        }
+    });
 }
 
 function generateCode(inputXml) {
@@ -574,6 +708,7 @@ function generateCode(inputXml) {
     var svg = xml.find("svg");
     globalSvg = svg;
     preprocessReferences(svg);
+    parseGradients(svg);
 
     if (toBool(localStorage.bakeTransforms)) {
         try {
@@ -598,6 +733,7 @@ function generateCode(inputXml) {
     //XML Vector start
     generatedOutput = '<?xml version="1.0" encoding="utf-8"?>\n';
     generatedOutput += '<vector xmlns:android="http://schemas.android.com/apk/res/android"';
+    generatedOutput += '\n' + INDENT + 'xmlns:aapt="http://schemas.android.com/aapt"'
 
     generatedOutput += '\n' + INDENT + 'android:width="{0}dp"\n'.f(width);
     generatedOutput += INDENT + 'android:height="{0}dp"\n'.f(height);
@@ -832,6 +968,11 @@ function parseColorToHex(color) {
 
     //Is hex already
     if (color.substr(0, 1) === "#") {
+        // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+        var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+        color = color.replace(shorthandRegex, function(m, r, g, b) {
+            return r + r + g + g + b + b;
+        });
         return color;
     } else {
         if (color.startsWith("rgb(")) {
