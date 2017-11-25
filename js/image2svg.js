@@ -9,7 +9,7 @@ var img2svgConverter = function (file, type, cb) {
     if(err) {
       throw err;
     }
-    var link = job.server + '/' + job.id;
+    var link = job.server + '/upload-file/' + job.id;
     sendFileToJob(link, file, cb);
   });
 };
@@ -51,7 +51,9 @@ function startJob(type, cb) {
 function sendFileToJob(link, file, cb) {
   //TODO: modify file.name to append uuid string in it
   var data = new FormData();
+  console.log(file);
   data.append('file', file);
+  console.log(data.get('file'));
   $.ajax({
     url: link,
     type: "POST",
