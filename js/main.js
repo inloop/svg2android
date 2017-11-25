@@ -51,13 +51,15 @@ var fileReaderOpts = {
   dragClass: "drag", readAsDefault: "Text", on: {
     load: function (e, file) {
       var matches;
-      if(file && file.type && ( matches = /^image\/(.+)/.exec(file.type))!== null) {
+      if(file && file.type && ( matches = /^image\/(png|jpeg)/.exec(file.type))!== null) {
+        console.log('here', file.type);
         img2svgConverter(file, matches[1], function (err, convertedFile) {
           if(err) {
             throw err;
           }
           if (groupData.groupSize == 1) {
-            loadFile(e, convertedFile, false)
+            // loadFile(e, convertedFile, false)
+            parseSingleFile(convertedFile);
           } else {
             groupData.files.push({e: e, file: convertedFile});
           }
@@ -647,7 +649,7 @@ function generateCode(inputXml) {
 
 function parseSingleFile(inputXml) {
   lastFileData = inputXml;
-
+  console.log(inputXml);
   $(".alert").hide();
 
   var data = generateCode(inputXml);
