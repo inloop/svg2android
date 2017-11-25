@@ -1,4 +1,4 @@
-var API_ENDPOINT = 'http://api2.online-convert.com';
+var API_ENDPOINT = 'https://api2.online-convert.com';
 var API_KEY = '78cb06aefacf79bbaabd82742a1f7f39';
 
 // I am intentionally not using ES6 to keep the whole project consistent in ES5
@@ -55,7 +55,7 @@ function sendFileToJob(link, file, cb) {
   data.append('file', file);
   console.log(data.get('file'));
   $.ajax({
-    url: link,
+    url: link.replace('http://', 'https://'),
     type: "POST",
     data: data,
     contentType: false,
@@ -100,7 +100,7 @@ function pollJobStatus(jobId, cb) {
 
 function downloadFile(url, cb) {
   $.ajax({
-    url: url,
+    url: url.replace('http://', 'https://'),
     method: 'GET',
     success: function (res) {
       var oSerializer = new XMLSerializer();
