@@ -177,6 +177,7 @@ function refreshSettings() {
     $(".opt-id-as-name").prop("checked", toBool(localStorage.useIdAsName));
     $(".bake-transforms").prop("checked", toBool(localStorage.bakeTransforms));
     $(".clear-groups").prop("checked", toBool(localStorage.clearGroups, true));
+    $(".wordwrap-pathdata").prop("checked", toBool(localStorage.wordWrapPathData, false));
 }
 
 function extractFileNameWithoutExt(filename) {
@@ -374,7 +375,11 @@ function parsePathD(pathData) {
         path += " ";
     }
 
-    return wordwrap(path.trim(), 80, "\n");
+    if (toBool(localStorage.wordWrapPathData)) {
+        return wordwrap(path.trim(), 80, "\n");
+    } else {
+        return path.trim();
+    }
 }
 
 
@@ -677,7 +682,11 @@ function fixPathPositioning(path) {
 }
 
 function fixNumberFormatting(path) {
-    return path.replace(/(\.\d+)(\.\d+)\s?/g, "\$1 \$2 ");
+    //Fix spacing between numbers
+    var result = path.replace(/(\.\d+)(\.\d+)\s?/g, "\$1 \$2 ");
+    //Fix decimal numbers which does not start with 0
+    result = result.replace(/([^\d])\./g, "\$10.");
+    return result;
 }
 
 function getDimensions(svg) {
@@ -793,6 +802,11 @@ function wordwrap(str, width, brk, cut) {
     }
 
     return matches.join(brk);
+}
+
+function enableWordWrapPathData(el) {
+    localStorage.wordWrapPathData = el.checked;
+    if (groupData.groupSize == 1) parseSingleFile(lastFileData);
 }
 
 function parseRgb(color) {
