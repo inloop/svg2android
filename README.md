@@ -1,6 +1,7 @@
 [![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-svg2android-brightgreen.svg?style=flat)](https://android-arsenal.com/details/1/1061)
 svg2android
 ===========
+### [Deprecated - use official [Vector Asset Studio](https://developer.android.com/studio/write/vector-asset-studio#svg) directly from Android Studio]
 
 *Convert SVG to Android VectorDrawable XML resource file.*
 
