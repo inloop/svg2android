@@ -133,6 +133,10 @@ $("body").bind("paste", function(e) {
     }
 });
 
+$("#deprecation-text").on("click", function (ev) {
+	ev.stopPropagation();
+});
+
 showLastUpdate("svg2android");
 
 /* ------ */
